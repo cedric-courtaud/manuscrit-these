@@ -1,0 +1,203 @@
+\documentclass[11pt, a4paper, oldfontcommands]{memoir}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{url}
+
+
+\usepackage{microtype}
+\usepackage[table]{xcolor}
+%\usepackage{newcent}
+\usepackage{mathpazo}
+%\usepackage{ebgaramond}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{listings}
+\usepackage{todo}
+
+\usepackage{mathtools}
+
+\usepackage{algpseudocode}
+\usepackage{algorithmicx}
+\usepackage{algorithm}
+
+\usepackage{float}
+
+\usepackage{marginnote}
+
+\usepackage{tablefootnote}
+\usepackage{multirow}
+
+\usepackage{xparse}
+\usepackage[outputdir=out]{minted}
+
+\usepackage{graphicx}
+\graphicspath{{graphics/}{graphics/figures/}}
+
+\usepackage{tikz}
+\usetikzlibrary{shapes}
+
+\usepackage[
+breaklinks=true,colorlinks=true,
+linkcolor=black,urlcolor=black,citecolor=black,% PRINT
+bookmarks=true,bookmarksopenlevel=2]{hyperref}
+% \makeatletter\let\@bibitem\saved@bibitem\makeatother
+
+\usepackage{geometry}
+% PDF VIEW
+% \geometry{total={210mm,297mm},
+% left=35mm,right=35mm,%
+% bindingoffset=0mm, top=35mm,bottom=35mm}
+% PRINT
+%\geometry{total={210mm,297mm}, left=35mm, right=35mm, bindingoffset=15mm, top=40mm, bottom=40mm}
+
+%\usepackage{minitoc}
+
+\usepackage{tabularx}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\usepackage{footnote}
+\makesavenoteenv{tabular}
+
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+ 
+\lstset{style=mystyle}
+%\OnehalfSpacing
+\linespread{1.2}
+
+% \usepackage[style=numeric, maxbibnames=6]{biblatex}
+
+%%% CHAPTER'S STYLE
+%\chapterstyle{bianchi}
+\chapterstyle{veelo}
+%\chapterstyle{ger}
+%\chapterstyle{madsen}
+%\chapterstyle{ell}
+%\chapterstyle{wilsondob}
+% \chapterstyle{thatcher}
+%\chapterstyle{pedersen}
+%%% STYLE OF SECTIONS, SUBSECTIONS, AND SUBSUBSECTIONS
+\setsecheadstyle{\Large\bfseries\raggedright}
+\setsubsecheadstyle{\large\bfseries\raggedright}
+\setsubsubsecheadstyle{\bfseries\raggedright}
+
+
+%%% STYLE OF PAGES NUMBERING
+%pagestyle{companion}\nouppercaseheads 
+\pagestyle{headings}
+%\pagestyle{Ruled}
+%\pagestyle{plain}
+%\makepagestyle{heading}
+%\makeevenfoot{plain}{\thepage}{}{}
+%\makeoddfoot{plain}{}{}{\thepage}
+\makeevenhead{plain}{}{}{}
+\makeoddhead{plain}{}{}{}
+
+\setlength{\parskip}{0.3cm}
+\maxsecnumdepth{subsection} % chapters, sections, and subsections are numbered
+\maxtocdepth{subsection} % chapters, sections, and subsections are in the Table of Contents
+
+%\mtcselectlanguage{french}
+\usepackage{enumitem}
+\input{macros}
+
+% \addbibresource{Bibliography.bib}
+
+\begin{document}
+% \firstchapteris{1}
+% \dominitoc
+
+% \newenvironment{keypoints}{
+%     \begin{center}
+%     \begin{tabular}{p{0.95\textwidth}}
+%     \cellcolor{teal!25}\rule{0pt}{20pt}
+%     \textbf{Points clés pour nos travaux} \\
+%     \cellcolor{gray!10}
+%     \begin{itemize}
+%         \renewcommand{\labelitemi}{$\square$}
+% }{
+%     \end{itemize} \\
+%     \end{tabular}
+%     \end{center}
+% }
+
+\renewcommand{\labelitemi}{$\bullet$}
+\renewcommand{\labelitemii}{$\bullet$}
+\renewcommand{\labelitemiii}{$\bullet$}
+\renewcommand{\labelitemiv}{$\bullet$}
+
+\renewcommand{\theequation}{\arabic{section}.\Roman{equation}}
+
+\input{page-de-garde1}\cleardoublepage
+
+\frontmatter
+
+
+\input{chapters/remerciements}\cleardoublepage
+\input{chapters/abstract}\cleardoublepage
+
+
+
+\tableofcontents
+
+\cleardoublepage
+
+% \cleardoublepage
+
+% \listoffigures
+
+% ---------------------------------------------------------
+% CHAPTERS
+% ---------------------------------------------------------
+\mainmatter
+
+\input{chapters/introduction}\cleardoublepage
+
+\part{Présentation du problème}
+% ---------------------------------------------------------
+
+
+
+\input{chapters/contexte}\cleardoublepage
+\input{chapters/soa_final}\cleardoublepage
+
+\part{Contributions}
+
+\input{chapters/microbenchmarks}\cleardoublepage
+\input{chapters/caracterisation}\cleardoublepage
+\input{chapters/inference}\cleardoublepage
+
+\input{chapters/conclusion}\cleardoublepage
+
+\backmatter
+%\bibliographystyle{ACM-Reference-Format}
+
+\input{publications}\cleardoublepage
+
+\bibliographystyle{plainurl}
+\bibliography{Bibliography}
+% \printbibliography
+
+\end{document}
