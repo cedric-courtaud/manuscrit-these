@@ -1,0 +1,27 @@
+digraph G {
+    compound=true;
+    BIN[label="Exécutable" fillcolor="lightgray" style="filled"]
+    ANNOT[label="Annotations" fillcolor="lightgray" style="filled"]
+    CFG_R[label="Reconstruction \n du CFG" shape="box" style="rounded"]
+    CFG;
+    CFG_A[label="CFG annoté"];
+    MAA[label="Analyse \n Micro-Architectural" shape="box" style="rounded"];
+    BL[label="Bornes locales" style="rounded"];
+    BG[label="Borne globale" style="rounded"];
+    GBA[label="Calcule \n de bornes" shape="box"];
+    ANNOT -> CFA;
+    ANNOT -> MAA;
+    {rank=same;BIN ANNOT}
+
+    BIN   -> CFG_R;
+    CFG_R -> CFG;
+
+    CFA[label="Analyse de \n flot de contrôle" shape="box" style="rounded"];
+
+    CFG -> CFA [lhead="cluster_cfa"];
+    CFA -> CFG_A [ltail="cluster_cfa"];
+    CFG_A -> MAA;
+    CFG_A -> GBA;
+    MAA -> BL -> GBA->BG;
+    {rank=same; MAA BL GBA}
+}

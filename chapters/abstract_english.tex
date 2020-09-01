@@ -1,0 +1,23 @@
+\chapter{Abstract}
+
+% Memory interferences may introduce important slowdowns in applications running on COTS multi-core processors.
+% They are caused by concurrent accesses to shared hardware resources of the memory system.
+% The induced delays are difficult to predict, making memory interferences a major obstacle to the adoption of COTS multi-core processors in real-time systems.
+% In this article, we propose an experimental characterization of applications' memory consumption to determine their sensitivity to memory interferences.
+% Thanks to a new set of microbenchmarks, we show the lack of precision of a purely quantitative characterization.
+% To improve accuracy, we define new metrics quantifying qualitative aspects of memory consumption and implement a profiling tool using the \textsc{Valgrind} framework.
+% In addition, our profiling tool produces high resolution profiles allowing us to clearly distinguish the various phases in applications' behavior.
+% Using our microbenchmarks and our new characterization, we train a state-of-the-art regressor.
+% The validation on applications from the \textsc{MiBench} and the \textsc{PARSEC} suites indicates significant gain in prediction accuracy compared to a purely quantitative characterization.
+
+Interference from the memory system can cause significant slowdowns to applications running in parallel on COTS multi-core processors.
+They are caused by concurrent accesses to shared hardware resources in the memory system.
+The magnitude of the delays caused by this phenomenon is difficult to predict, making interference a major obstacle to the adoption of COTS multi-core processors in real-time systems.
+This thesis is devoted to the characterization of the sensitivity of an application to memory interferences based on a characterization of its behavior in isolation.
+The goal is to determine a priori if an application is sensitive to this problem or not.
+Using a set of microbenchmarks that we have previously introduced, we show that a purely quantitative characterization of memory access behavior characterizes the sensitivity to interference in a very imprecise way.
+In order to allow a more precise characterization of sensitivity, we introduce different metrics to quantify quantitative and qualitative aspects of memory use.
+In order to measure these metrics, we implement a profiler prototype based on dynamic binary instrumentation approaches.
+In addition to allowing the measurement of qualitative aspects, this tool produces high-resolution profiles that clearly distinguish the different phases in application behaviors.
+Finally, we use data from our microbenchmarks to train a machine learning algorithm according to several characterizations.
+Experimental results show significant reductions in error reduction for the prediction of the delay undergone by applications of the \textsc{MiBench} and \textsc{PARSEC} suites.

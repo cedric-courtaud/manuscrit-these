@@ -1,0 +1,23 @@
+digraph g {
+
+    R[label="Requête" style="rounded" shape="rect"];
+    IS_RH[label="Row hit ?" shape="diamond"fixedsize="shape" width=1.5 height=1];
+    IS_READ[label="Requête en \n lecture ?" shape="diamond" fixedsize="shape" width=1.5 height=1];
+    IS_EMPTY[label="Row buffer \n vide ?" shape="diamond" fixedsize="shape" width=1.5 height=1];
+    PRE[shape="parallelogram"];
+    ACT[shape="parallelogram"];
+    READ[shape="parallelogram"];
+    WRITE[shape="parallelogram"];
+
+    PRE -> ACT[constraint="false"];
+    R -> IS_RH;
+    IS_RH -> IS_READ[label="Oui"];
+    IS_RH -> IS_EMPTY[label="Non"];
+    IS_EMPTY -> PRE[label="Non"];
+    IS_EMPTY -> ACT[label="Oui"];
+    ACT -> IS_READ;
+    IS_READ -> READ[label="Oui"];
+    IS_READ -> WRITE[label="Write"];
+    {rank=same;READ WRITE ACT PRE}
+
+}

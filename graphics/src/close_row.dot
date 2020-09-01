@@ -1,0 +1,16 @@
+digraph g {
+
+    R[label="Requête" style="rounded" shape="rect"];
+    IS_READ[label="Requête en \n lecture ?" shape="diamond" fixedsize="shape" width=1.5 height=1];
+    PRE[shape="parallelogram"];
+    ACT[shape="parallelogram"];
+    READ[shape="parallelogram"];
+    WRITE[shape="parallelogram"];
+
+    R -> ACT;
+    ACT -> IS_READ;
+    IS_READ -> READ[label=Oui];
+    IS_READ -> WRITE[label=Non];
+    READ -> PRE;
+    WRITE -> PRE;
+}

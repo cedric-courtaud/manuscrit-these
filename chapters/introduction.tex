@@ -1,0 +1,399 @@
+% !TEX root = ../main.tex
+
+\chapter{Introduction}
+
+% SYSTEMES EMBARQUES TEMPS REELS
+
+% La plupart des systèmes embarqués sont \emph{temps-réel}.
+% C'est à dire qu'ils doivent remplir leur fonctions en respectant des échéances de temps.
+% Le dépassement de ces échéances pouvant entraîner des défaillances du système, elles doivent être évités.
+% Ainsi, la vérification du respect de ces contraintes de temps est un enjeu majeur dans la conception de ces systèmes.
+% Pour cela, il faut montrer que l'on peut ordonancer les applications composant le système de manière à respecter leur échéances, en supposant le pire temps d'exécution (WCET) de ces applications sur le matériel ciblé.
+% Cela implique, que les systèmes temps-réels sont dimensionnés pour les pire cas.
+
+% Le matériel utilisé comme support d'exécution de ces systèmes doit répondre à différentes contraintes.
+% Ces systèmes étant embarqués, le matériel doit respecter des contraintes de taille, de poids, et de consommations énergétique (on parle de contraintes SWaP\footnote{Size, Weight, and power}).
+% Étant des produits industriels, ils doivent également respecter de fortes contraintes de coûts.
+% Cette contraintes économique implique la nécessité de recourir à du matériel acheté sur étagères (nous parlerons de matériel COTS\footnote{Components Off The Shelf}).
+% La faible taille du marché des systèmes critiques rends en effet prohibitif le recours à du matériel spécifique.
+% Enfin, ces systèmes deviennent de plus en plus complexes, que ce soit de par le nombre de fonctionalités offertes, ou encore par la complexité des ces dernières.
+% Cela se traduit par des exigences de performances toujours plus importantes pour l'implantation à bas coût des systèmes embarqués.
+
+% Ces contraintes supplémentaires ont une influence sur le choix du matériel utilisé comme support d'exéction.
+% Les contraintes de coûts interdisent la conception de matériel spécifique.
+% Cela implique donc l'utilisation de composants disponible dans le commerce.
+% On parle de \emph{composants sur étagère} (ou encore de matériel COTS\footnote{Component Off The Shelf}).
+% Les autres contraintes implique que les composants choisi parmi l'offre existante doivent répondre à un compromis de performance, de taille, de poids, et de consommation énergétique.
+
+% Systèmes embarqués temps-réels. 
+% Travail en temps fini et borné. 
+% Enjeu de conception => garantir respect des échéances.
+% Analyse de pire temps d'exécution. en isolation.
+
+% Au dela des contraintes de sûreté, contraintes industrielles.
+% Fortes contraintes de coûts.
+% Embarquabilité => contraintes SWaP.
+% De plus en plus contraintes de performances.
+
+% Une offre conséquente de processeurs respectant ces contraintes existe sur le marché de masse.
+% Il s'agit majoritairement de processeurs \emph{multi-coeurs}.
+% Ce type de processeurs s'est généralisé, depuis le milieu des années 2000, pour des raisons techniques principalement liée à des questions de performances énergétiques~\cite{borkar1999design}.
+% Depuis, la majorité des processeurs équippant les ordinateurs de bureau, les serveurs, mais aussi des terminaux mobiles comme les téléphones ou les tablettes sont multi-coeurs.
+% Cela se traduit par une offre pléthorique de processeurs combinant faible coût, faible consommation, et bonnes performances.
+% Ces avantages rendent ce type de matériel particulièrement intéressant pour implanter, à bas cout,  des systèmes embarqués.
+
+% Afin de tirer pleinement parti d'un processeur multi-coeur, il faut exploiter le parallèlisme.
+% Malheuresement, lorsque l'on utiliser des processeurs COTS pour des systèmes temps-réel, exploiter ce parallélisme s'avère difficile.
+% En effet, pour des raisons techniquement valide de coûts et de performances, les coeurs, dans ces processeurs, partagent des composants matériels, notamment du système mémoire.
+% L'accès concurrent à ces ressources partagés entrainent des ralentissements pour les applications s'exécutant en parallèle.
+% Ces ralentissements sont le résultat d'un couplage implicite des applications par le biais du matériel.
+% Ainsi, ils s'observent y compris si les applications sont indépendantes les unes des autres.
+% On parle d'\emph{interférences}.
+
+% Les interférences sont un frein majeur à l'adoption des processeurs multi-coeurs pour des applications temps-réel.
+% En effet, si les retards induits par ces interférences ne sont pas pris en compte pendant la conception, des dépassements d'échéances peuvent survenir.
+% Les techniques de calcul du WCET supposent normalement le cas où les applications s'exécutent en isolation, c'est à dire sans influences extérieures.
+% Prendre en compte les interférences s'avère difficile, tout particulièrement dans les outils d'analyse statiques.
+% Les bornes produites, à l'heure actuelle, par ces outils se révèle actuellement trop conservative pour être utiles.
+% En effet, cela conduit à utiliser des facteurs d'inflations du WCET en isolation supérieur au nombre de coeurs disponibles.
+% Ce problème est tel, que dans certains systèmes, il conduit à désactiver tout les coeurs du processeur sauf un.
+% La difficulté d'analyse est d'une part du à la concurrence induit par le parallélisme, mais aussi, et surtout, à la complexité et à l'opacité du matériel considéré.
+
+% Les approches \emph{dynamiques} sont basées sur des mesures.
+% En mesurant directement la dégradation des performances en situation d'interférences, on peut obtenir une précision significativement meilleur qu'avec les approches statiques.
+% Il faut néamoins garder à l'esprit que ces méthodes sont jugées \emph{non sûres}.
+% En effet, il n'est pas possible de garantir que la couverture de tests effectuées couvre effectivement les pire cas d'interférences.
+% Cette incertitude conduit donc à multiplier les tests, ce qui s'avérer coûteux en temps.
+
+% L'utilisation d'approche basée sur des tests permet d'obtenir une bien meilleur précision dans l'évaluation du coût des interférences.
+% Néanmoins, ces méthodes sont jugées non sûres.
+% En effet, contrairement aux approches statiques, les approches statiques ne permettent de couvrir qu'un sous ensemble des chemins d'exécutions et des situations d'interférences possibles.
+% De plus, on ne sait pas garantir que la couverture de tests comprends effectivement les pire cas.
+% Cela conduit à la multiplication de tests.
+
+% Malheureusement, les performances des processeurs que nous venons d'évoquer sont obtenues en faisant des choix de conceptions les rendant difficiles à utiliser dans un contexte temps-réels.
+% Parmi ces choix, celui qui nous préoccupe est le partage de ressurces matériel entre les coeurs.
+
+% Depuis le milieu des années 2000, ce type de processeurs est omniprésent dans les applications généralistes.
+% Cette bascule s'est effectué pour des raisons techniques. 
+% Notamment, pour continuer à augmenter la performance des processeurs tout en maitrisant leur consommation énergétique.
+
+% Multi-coeurs. Standard depuis les années 2000. Omniprésent dans le marché de masse.
+% Disponibilité de cartes efficace et pas cher.
+% Percu comme inévitable dans l'industrie[REF].
+% Utilisation efficace requiert l'exploitation du parallèlisme.
+
+% Coeurs partage du matériel pour des raisons de coûts et de performances.
+% Couplage implicite des applications => ralentissements.
+% Ce partage est essentiellement opéré entre les composants du système mémoire
+% application ralentie en fonction de son utilisation et de celles des autres.
+% Y compris dans le cas d'application indépendante, sans synchro.
+
+% Dans ce document, nous nous intéressons à l'estimation \emph{a priori} du retard que peut subir à une applicaiton à cause des interférences.
+% Cela signifie, que nous voulons déterminer la sensibilité d'une application à ce problème en observant son comportement en isolation.
+% Le but étant de pouvoir dimmensionner rapidement un système sans recourir à des campagnes massives de mesures.
+% Le problème qui se pose alors est de capturer le comportement du matériel en ce qui concerne les interférences.
+% Deux questions se posent alors:
+% \begin{enumerate}
+% 	\item Comment caractériser le comportement des applications en isolation ?
+% 	Plus particulièrement, quelle sont les critères importants à prendre en compte pour juger de la sensibilité aux interférences.
+% 	\item Une fois ces critères identifiés, comment réunir suffisamment d'applications représentatives pour capturer efficacement le comportement du matériel ?
+% \end{enumerate}
+
+
+% La question qui nous interesse, alors, est de savoir si l'on peut estimer la sensibilité d'une application en observant son comportement en isolation.
+% Les motivations de notre intêret pour cette problématique ont pour origine le fait  que pour un scenario d'interférences donné, le retards que subi une application est déterminé par deux facteurs : l'utilisation que fait l'application du matériel et le comportement du matériel lui même.
+
+% ET MOI LA DEDANS ?
+% Où ? Système à criticité mixte.
+% Qui ? Application temps-réel.
+% Quoi ? Retards à priori.
+% Comment ? Capturer le comportement.
+% Pourquoi ? Dimensionement du système.
+
+
+% Plan de la thèse:
+% 	=> Présentation du problème des interférences
+% 	=> Impact des interférences en temps-réel + présentation des approches proposées pour répondre à ce problème.
+% 	=> Évaluation de l'impact
+% 	=> Caractérisation du comportement
+% 	=> Inférence
+
+% \emph{Commercial Off The Shelf (COTS)} multi-core platforms offer computational power and energetic efficiency at a low price, making them appealing targets for the development of complex embedded systems.
+% Unfortunately, the adoption of COTS multi-core platforms is hindered by memory interferences which are due to the sharing of components of the memory hierarchy (caches, interconnects, DRAM chips and controllers,...) between cores, for cost and efficiency reasons.
+% Memory interferences cause significant and hard-to-predict overheads, and they considerably challenges traditional timing analyses~\cite{maiza2018survey}, which often results in unusably high deadlines values for real-time applications.  
+% In fact, accurately predicting memory interference overheads remains a difficult problem.
+
+% In this paper, we present a novel approach to estimate the
+% interference overhead of  an application based on a characterization
+% of its behavior. The motivation of our work is that existing practical
+% approaches to determine interference overhead rely only on bandwidth
+% measurement which lead to conservative pessimitic values~\cite{yun2013memguard}~\cite{blin2016maximizing}.
+% We make three contributions. 
+% First, we introduce a new set of microbenchmarks that allow to cover a wide range of memory behavior varying both in nature and intensity.  
+% With these microbenchmarks, we show that a purely quantitative metric such as the memory bandwidth is insufficient to determine accurately the sensitivity of an application to interferences.  
+% Second, we propose new metrics for quantifying the qualitative aspects of memory behavior. 
+% Since most of these metrics are not measurable using hardware counters, we have implemented a profiling tool using the \textsc{Valgrind} framework~\cite{nethercote2007valgrind}.
+% Our profiling tool generates high resolution profiles of the application memory behavior, allowing one to distinguish various phases in the execution of an application.
+% Finally, we use our microbenchmarks and our metrics to train a state-of-the-art regression algorithm to predict the interference overhead.
+
+% % Le système mémoire est un élément crucial dans la performance des processeurs modernes.
+% % Il est organisé hiérarchiquement.
+% % Dans les processeurs multicœurs, les niveaux supérieurs de cette hiérarchie sont généralement partagés entre les cœurs.
+% % L'accès concurrent à ces ressources est une source \emph{d'interférences}, causant des ralentissements à la fois imprévisibles et significatifs pour les applications.
+% % Dans le cas d'applications temps réel, ces ralentissements peuvent entraîner des dépassements d'échéances.
+% % Ils doivent être pris en compte dans le calcul du pire temps d'exécution de ces applications.
+% % En dépit des efforts de la communauté temps réel pour réduire~\cite{yun2014palloc}~\cite{muralidhara_reducing_2011}~\cite{kim2017attacking}~\cite{panchamukhi_providing_2015}, réguler~\cite{blin2016maximizing}~\cite{kritikakou2014run}~\cite{kritikakou2014distributed}~\cite{girbal2015deterministic}~\cite{yun2013memguard}, ou bien modéliser~\cite{zhuravlev2010addressing}~\cite{kim2014bounding}~\cite{pellizzoni2010worst}~\cite{maiza2018survey} ces interférences, il est encore difficile de déterminer le retard que peut subir une application sans recourir à d'importantes campagnes de tests.
+
+% %Even in the worst case scenario, applications suffer differently from the problem of interferences.
+% %On a given platform, this difference of sensitivity finds its roots in particular aspects of the application behaviour.
+% %Which ones remains unclear.
+% %In this article we present our tools to gain a better insight 
+
+% %This article reports our efforts to tackle the problem of determining the sensitivity of an application to memory interferences from a characterization of its behaviour in isolation.
+% %Our approach consists in learning the behaviour of a particular hardware platform using a set of representative applications.
+% %To achieve this goal, we are facing three challenges: we must gather a set of representative applications, we must characterize their behaviour, and finally we must make a prediction using experimental data.
+% %To address the first challenge, we introduce a new set of microbenchmarks allowing us to generate a \emph{configurable} memory traffic.
+% %Using these microbenchmarks, we show that the impact of interference does not depend solely on quantitative characteristics such as memory bandwidth, but also on qualitative one such as read/write ratio, the interleaving these accesses, or the type of access patterns.
+% %Since most of the qualitative aspects of the memory traffic is not measurable by traditional means, we introduce a new high resolution profiling tool allowing us to capture them.
+% %We show that using qualitive features to characterize memory access behaviour allow us to improve non conservative prediction significantly.
+% %Finally, we pave the way for the conservative inference of memory interferences impact.
+
+% %This paper makes the following contributions:
+% %\begin{itemize}
+% %	\item We introduce a set of configurable microbenchmarks allowing us to generate a great variety of memory trafic.
+% %		We use these microbenchmarks to generate over 1000 instances of memory traffic.
+% %	\item We introduce a new high resolution profiling tool, that we use to capture yet unmeasurable qualitative aspects of the memory traffic.
+% %	\item We <S-F11>
+% %\end{itemize}
+
+% Our results are as follow:
+% \begin{itemize}
+% %%  \item We present a set of microbenchmarks covering a wide range of memory consumption behaviors, both in nature and in intensity.
+%   \item We evaluate the effects of memory interferences on 1568 distinct cases of memory behavior on a iMX6.q Sabre Lite board~\cite{sabrelite}.
+%   \item We show the limits of a purely quantitative metric and propose qualitative metrics.
+% %%  In particular, we propose novel metrics to measure the complexity of access patterns and the impact of memory service time on applications progress.
+% \item We have implemented a profiler using the \textsc{Valgrind} framework to generate high resolution profiles of the memory behavior.
+% 		In a case study, we show that these profiles allow to split applications into phases of equivalent overhead.
+
+% \item Using our microbenchmarks and the proposed metric, we train a state of the art regressor to infer the sensitivity of applications to interferences.
+% 		Validation on 78 test cases from 29 applications of the \textsc{MiBench}~\cite{guthaus2001mibench} and the \textsc{PARSEC}~\cite{bienia2008parsec} suites shows a reduction of respectively 50\% and 74.4\%  of the absolute and squared prediction errors compared to a purely quantitative characterization.
+% \end{itemize}
+
+% This article is organized as follows. In Section~\ref{section:platform_eval}, we present our microbenchmarks and evaluate the range of behavior they cover.
+% This section also presents our interference measure methodology.
+% In Section~\ref{section:characterization}, we discuss of the quantitative characterization of memory consumption behaviors, define qualitative metrics, and presents our high resolution profiling approach.
+% In Section~\ref{section:evaluation}, we evaluate the relevance of our new characterization.
+% Finally, we present the related work in Section~\ref{section:related works}, before concluding and discussing future work in Section~\ref{section:conclusion}.
+
+% % La question qui nous intéresse dans cet article est de déterminer la sensibilité d'une application au problème des interférences mémoires (sur une plateforme matérielle donnée) à partir de son comportement.
+% % Notre approche finale est une approche d'apprentissage, dans laquelle on cherche à capturer le comportement d'une plateforme en utilisant un jeu d' applications caractéristiques.
+
+% % Cet article présente notre approche pour résoudre deux problèmes: celui de générer un ensemble d'application couvrant une grande variété de trafic différent du point de vue de leur sensibilité aux interférences et celui de la caractériser ce trafic.
+% % Il est organisé comme suit.
+% %Nous présentons d'abord un ensemble de microbenchmarks paramétrables permettant de générer une importante variété de trafic différent.
+% %À l'aide de ces microbenchmarks, nous montrons que l'impact des interférences ne dépend pas que de critères purement quantitatifs comme la bande passante, mais aussi de critères qualitatifs tels que le taux de lectures/écritures, leur entrelacement, ou encore la séquentialité des accès.
+% %Nous présentons finalement un nouvel outil de profilage haute résolution permettant d'observer les aspects qualitatifs du trafic mémoire.
+
+% % In this section we present our experimental platform and its configuration.
+
+% % The experiments of this article are conducted on \textsc{NXP iMX 6.q Sabre Lite} platform, which is briefly specified in \ref{table:sabrelite_spec}
+% %This board, originally targetting the automative market, is widely used in the industry.
+% % The iMX6 processor of this board is designed for the consumer market, thus it relies on complex hardware features such as out-of-order execution, caches, and prefetchers.
+% % We use the \emph{lockdown by master} mechanism provided by the hardware to partition the L2 cache.
+
+
+
+Depuis le milieu des années 2000, les processeurs sont majoritairement conçus selon des architectures multi-cœurs.
+Cette bascule s'est effectuée pour des raisons techniques, principalement liées à la consommation énergétique~\cite{borkar1999design}.
+Depuis, la plupart des processeurs équipant les ordinateurs de bureau, les serveurs, mais aussi des terminaux mobiles comme les téléphones intelligents ou les tablettes sont des processeurs multi-cœurs.
+Cette omniprésence se traduit par une offre pléthorique de processeurs sur le marché de masse (on parlera de composants sur étagère ou COTS\footnote{Component Off The Shelf}).
+Dans cette offre, on trouve notamment des processeurs alliant embarquabilité (taille réduite et faible consommation énergétique) et performances pour un coût modique.
+Ces bénéfices rendent ce type de matériel particulièrement attrayant pour 
+répondre aux contraintes de coûts et de performances des prochaines générations de systèmes embarqués temps-réels.
+
+% L'émergence d'applications nouvelles, les voitures autonomes par exemple, s'accompagne d'une forte montée en complexité des systèmes embarqués.
+% Cette complexité concerne aussi bien le nombre de fonctions assurés, que leur exigences en terme de performances.
+% Les processeurs multi-coeurs sont attrayants pour accompagner cette évolution.
+% En effet, les systèmes embarqués complexes comprenant différentes machines (appelées calculateurs) reliées entre elles par un réseau.
+% L'emploi de machines plus puissantes permet de réduire les coûts en réduisant le nombre de calculateurs nécessaire à l'implantation du système.
+% Dans certains domaines, le passage au multi-coeur est également vu comme une solution pour pallier l'obsolescence des processeurs mono-coeurs.
+
+Ces progrès techniques accompagnent nombre d'innovations industrielles, comme
+celui de la voiture autonome. L'utilisation de multic\oe{}urs y permet non
+seulement de multiplier les fonctionnalités, mais aussi de réduire le nombre de
+calculateurs. Ce dernier point est important, car il simplifie l'intégration et
+réduit les coûts. Notons aussi que ce passage aux multic\oe{}urs est parfois
+imposé aux industriels, car les calculateurs mono-c\oe{}urs se font de plus en
+plus rares.
+
+Cette transition n'a pas été sans poser de problèmes, notamment pour les systèmes embarqués temps-réels.
+En effet, elle se heurte aux exigences de sûreté inhérentes à ces systèmes, et notamment celles concernant la sûreté temporelle.
+%La transition vers des machines multi-cœurs se heurte néanmoins aux exigences de sûreté des systèmes embarqués temps-réels, notamment celles concernant \emph{la sûreté temporelle}.
+Les applications temps-réel devant répondre en temps borné, elles ont des échéances à respecter sous peine d'entraîner une défaillance du système.
+Lors de la conception d'un tel système, il convient donc de garantir que les applications le composant puissent respecter leurs échéances.
+Pour s'en assurer, l'usage est d'étudier l'ordonnancement des différentes applications du système en considérant leur pire temps d'exécution (WCET\footnote{Worst Case Execution Time}).
+% La transition vers des machines multi-coeurs se heurte néanmoins aux exigences de sûreté propres aux systèmes temps-réels.
+% %Cette attractivité se heurte néanmoins aux exigences de sûreté propre à ces systèmes.
+% Les systèmes embarqués comprennent le plus souvent des applications critiques et temps-réels.
+% Cela se traduit par des exigences de sûreté fonctionelles \emph{et} temporelles.
+% Les applications temps-réels doivent répondre en \emph{temps borné}, en d'autre termes elles ont des échéances à respecter sous peine d'entrainer une défaillance du système.
+% Un enjeu important est donc de s'assurer du respect de ces échéances.
+% Traditionellement, cette vérification est faite au moyen d'une analyse d'ordonancement en supposant le pire temps d'exécution (WCET) des applications.
+Le calcul du WCET est un problème difficile, supposant une bonne connaissance du matériel sur lequel s'exécute l'application et l'absence d'influence extérieure sur son exécution.
+Ainsi, un critère souvent associé au choix du matériel pour les systèmes embarqués est le \emph{déterminisme}.
+On doit pouvoir anticiper le comportement du matériel \emph{dans les pires cas}.
+Or, les processeurs multi-cœurs COTS, étant destinés au marché de masse, sont conçus pour offrir de bonnes performances en moyenne au détriment du déterminisme.
+
+Parmi les sources d'indéterminisme affectant les processeurs COTS, les travaux présentés dans ce document se concentrent sur celles liées aux partages de ressources matérielles entre les différents cœurs.
+%Parmi les sources d'indéterminisme affligeant les processeurs COTS, celle qui nous préoccupe dans ce document trouve son origine dans le partage de ressources matérielles par les différents coeurs.
+En effet, le partage de ressources tel que les caches les bus, ou encore les contrôleurs mémoires est une source d'interférences entre les applications s'exécutant en parallèle.
+Ainsi, sur une machine avec un cache partagé, des données utiles à une application $A$ peuvent être évincées au profit de données d'une application $B$.
+Si l'application $A$ accède de nouveau à ces données, cela entraînera un défaut de cache qui n'aurait pas eu lieu si elle s'exécutait seule.
+De plus, le chargement de données faisant suite à ce défaut peut entraîner une situation similaire pour l'application $B$.
+Les accès concurrents aux composants matériels partagés entraînent donc des ralentissements qui s’ ils ne sont pas pris en compte peuvent entraîner des dépassements d'échéances.
+Les interférences posent un problème fondamental pour le calcul du WCET, car celui-ci dépend du comportement des autres applications.
+L'intégration de ces interférences dans ce calcul pose des problèmes mettant en échec les approches utilisées jusqu'à présent.
+Ces difficultés sont aussi bien causées par la complexité et l'opacité du matériel ciblé, que par la nature concurrente du problème.
+Ainsi, pour déterminer le retard qu'une application peut subir à cause des interférences, il faut actuellement étudier son comportement en situation de stress sur les ressources matérielles, ce qui implique d'importantes campagnes de tests.
+
+L'ampleur du retard que peut subir une application à cause des interférences dépend de trois facteurs : les applications s'exécutant en parallèle, le matériel et l'application elle-même.
+En pratique, il est difficile, voire impossible, de raisonner sur le matériel et les autres applications.
+Partant de ce constat, la question qui se pose est : peut-on estimer la sensibilité d'une application aux interférences uniquement à partir de caractéristiques qui lui sont propres ?
+Par là, nous entendons les caractéristiques  décrivant le comportement de l'application sur le matériel ciblé lorsque celle-ci s'exécute seule.
+Il s'agit alors de ne pas considérer les aspects concurrents du problème, et, ainsi, d'éviter le recours à des analyses complexes ou à de grands nombres d'expériences.
+
+Ce document apporte des éléments de réponses en cherchant à identifier différents aspects caractérisant le comportement des applications en isolation afin de caractériser leur sensibilité aux interférences.
+Le but étant de pouvoir caractériser ce comportement suffisamment précisément pour estimer rapidement le retard que peut subir une application.
+Une telle estimation peut être utile pour dimensionner rapidement un système, ou encore évaluer la pertinence d'une cible en particulier.
+%Les défis que nous avons à relever sont de déterminer les aspects pertinents de l'utilisation du matériel pour caractériser la sensibilité aux interférences, et de capturer le comportement du matériel.
+Les difficultés d'analyses inhérentes aux processeurs COTS nous poussent à adopter une approche boite noire, et donc de limiter autant que possible les hypothèses sur le matériel.
+Afin de caractériser la sensibilité aux interférences à partir du comportement en isolation, nous conduisons un grand nombre d'expériences préliminaires sur le matériel ciblé dans le but de capturer son comportement.
+
+\section{Contributions}
+
+Les contributions apportées par nos travaux s'articulent autour de trois axes : 
+
+\begin{description}
+	\item [Microbenchmarks pour l'analyse d'interférences] L'ampleur de l'impact des interférences est directement liée à l'utilisation que font les applications du matériel.
+	Pour analyser le comportement d'une plateforme matérielle, il faut donc pouvoir couvrir un large spectre de cas d'utilisation.
+	Dans ce but, nous avons développé un ensemble de microbenchmarks dont on peut faire varier le comportement selon différents paramètres.
+	Les aspects selon lesquels nous faisons varier ce comportement sont déterminés à partir d'une représentation événementielle de l'utilisation de la mémoire faite par les programmes.
+	Nous montrons que ces microbenchmarks permettent de couvrir un grand nombre de cas différents de sensibilité aux interférences.
+
+	\item [L'étude du comportement d'accès à la mémoire] Nous souhaitons caractériser le comportement d'accès à la mémoire en isolation des applications afin de caractériser leur sensibilité aux interférences.
+	Dans ce document, nous proposons différentes métriques quantifiant différents aspects de ce comportement.
+	Nous faisons notamment une distinction entre les \emph{métriques quantitatives} quantifiant les aspects liés à l'intensité de l'utilisation que fait l'application du matériel et les \emph{métriques qualitatives} quantifiant les aspects liés à leur nature.
+	Certaines des métriques que nous avons définies n'étant pas mesurables par des moyens traditionnels, nous avons implanté un prototype de profileur reposant sur la simulation du trafic émis par les applications.
+	Cet outil permet également la génération de \emph{profils haute résolution}, représentant finement l'activité d'un programme, et plus particulièrement les différentes phases de son exécution.
+
+	\item [L'inférence de surcoût temporel engendré par les interférences] Nous utilisons des approches d'apprentissage automatiques pour construire des fonctions de prédiction du surcoût temporel subi par une application en fonction de son comportement d'accès à la mémoire.
+	L'entraînement de ces prédicteurs est effectué à l'aide de données issues de nos microbenchmarks.
+	Nous évaluons à cette occasion la pertinence des différentes métriques que nous avons préalablement définie.
+	Pour cela, nous mesurons la qualité des prédictions obtenues en employant différents ensembles de métriques.
+	Nous montrons ainsi que l'emploi de métriques qualitatives permet d'atteindre des gains de précisions significatifs (jusqu'à 61,2\%).
+\end{description}
+
+% MICROBENCHMARKS
+
+% CARACTERISATION
+
+% PROFILING
+
+\section{Organisation du document}
+
+Le corps de ce document est organisé en deux parties et cinq chapitres.
+La première partie, constituée de deux chapitres, expose en détail le problème que posent les interférences.
+La seconde partie est constituée des trois chapitres restants, où sont exposées les contributions apportées par nos travaux.
+
+Le contenu des chapitres est organisé de la façon suivante :
+\begin{description}
+	\item [Chapitre 2] Nous présentons le problème des interférences sous l'angle du matériel.
+	Après avoir formulé des hypothèses de bases sur les systèmes étudiés, nous présentons les différents canaux d'interférences que l'on peut trouver sur le matériel disponible actuellement.
+	Nous nous pencherons ensuite sur le fonctionnement et les interférences du système mémoire, au cœur de nos préoccupations.
+
+	\item [Chapitre 3] Nous exposons les contraintes liées à la conception des systèmes temps-réels et l'impact des interférences sur ces systèmes.
+	Nous présentons, ensuite, un état de l'art des approches permettant de prendre en compte le problème des interférences dans les systèmes temps-réels.
+
+	\item [Chapitre 4] Nous présentons une représentation événementielle du trafic mémoire nous permettant de distinguer divers aspects de l'utilisation que fait un programme du système mémoire.
+	Nous proposons et implantons ensuite un ensemble de microbenchmarks permettant de générer divers scénarios d'utilisation de la mémoire variant selon les aspects illustrés précédemment.
+	Enfin, nous utilisons ces microbenchmarks pour évaluer l'ampleur du phénomène des interférences sur une plateforme multi-cœur COTS utilisée dans l'industrie.
+
+	\item [Chapitre 5] Nous nous penchons sur la caractérisation du comportement applicatif.
+	Ainsi, nous définissons diverses métriques en rapport avec la sensibilité supposée aux interférences.
+	Nous faisons la distinction entre des métriques quantitatives caractérisant l'intensité de l'utilisation de la mémoire, et des métriques qualitatives caractérisant leur nature.
+	Enfin, nous présentons un outil de profilage permettant de mesurer ces métriques, ainsi que de découper les applications en phases homogènes.
+
+	\item [Chapitre 6] Nous évaluons la pertinence des caractéristiques définies dans le chapitre précédent pour la caractérisation de la sensibilité aux interférences.
+	Dans ce but, nous utilisons un algorithme d'apprentissage automatique pour inférer le retard subi par des applications en caractérisant leur comportement de différentes manières.
+	L'apprentissage est effectué à partir de données issues de nos microbenchmarks.
+	Pour terminer, nous présentons les résultats d'une expérience conduite sur les benchmarks des suites \textsc{MiBench} et \textsc{PARSEC}.
+	Ces résultats valident le choix des métriques, le profilage, ainsi que la technique d'apprentissage en permettant d'améliorer très significativement la prédiction de la sensibilité en comparaison d'une approche basée uniquement sur la consommation de la bande passante.
+
+\end{description}
+
+% Ce document apporte des réponses aux deux questions que nous venons de formuler.
+% Il est organisé en cinq chapitres, eux même regroupé en deux parties.
+% La première partie détaille le contexte dans lequel nous évoluons et la problématique à laquelle nous sommes confrontés.
+% Elle comprends deux chapitre.
+% Dans le premier chapitre, nous commencerons par aborder le problème des interférences au niveau du matériel.
+% Nous aborderons d'abords les différentes contraintes auxquel doit répondre les systèmes qui nous intéressent.
+% Nous présenterons ensuite le problème des interférences, ainsi que les différents composants à l'origine de celles-ci.
+% Puis nous détaillerons le fonctionement et les interférences du système mémoire, celui ci étant au centre de nos préoccupations.
+% Dans le deuxième chapitre, nous présenterons ensuite l'impact des interférences sur la conception des systèmes temps-réels.
+% Ce chapitre présentera également un état de l'art des approches actuellement proposée pour répondre à ce problème.
+
+% La deuxième partie présente les différentes contributions apportées par nos travaux.
+% Elle comprends trois chapitres.
+% Dans le premier chapitre de cette partie, nous aborderons le problème d'évaluer l'ampleur du problème des interférences sur une cible multi-coeur COTS.
+% Nous y introduirons un modèle évenementiel pour caractériser le comportement d'accès à la mémoire des applications, ainsi qu'un ensemble de microbenchmarks permettant de couvrir une multitude de comportement différent.
+% Le second chapitre de cette partie est consacré à la caractérisation de ces comportements.
+% Nous y introduirons un ensemble de métriques permettant de quantifier différents aspects de celui ci.
+% Enfin dans la troisième partie, nous nous pencherons sur l'inférence de retards en utilisant les microbenchmarks et les différentes métriques présentés dans les deux chapitres précedents.
+
+
+% Ils sont soumis à de fortes exigences de sûreté (fonctionelle \emph{et} temporelle), mais aussi à de fortes contraintes de coûts.
+% L'utilisation de processeurs multi-coeur acheté sur étagère (on parlera de processeurs COTS\footnote{Components Off The Shelf}) est prometteuse pour répondre à cette deuxième contrainte.
+% Les systèmes embarqués complexes, comme ceux que l'on trouve dans les avions, comprennent plusieurs machines (appelées calculateur) reliées entre elles par un réseau.
+% Historiquement, ces systèmes étaient conçus selon des architectures fédérées, c'est à dire que chaque fonction du système disposait d'un calculateur dédié.
+% La montée en puissance des calculateurs a permis l'émergence d'architectures intégrées, permettant de mutualiser les calculateurs entre plusieurs fonctions.
+% L'utilisation de calculateurs multi-coeurs permet de pousser encore plus loin cette mutualisation en permettant l'exécution de plusieurs fonctions en parallèle.
+% Les systèmes embarqués temps-réels sont de plus en plus complexes.
+% Cela se traduit, par une augmentation du nombre de fonctions à assurer, mais aussi des exigences de ces dernières.
+% Ainsi, l'utilisation de ce type de matériel s'avère être une nécessité pour maîtriser les coût de ces systèmes.
+
+% Si les processeurs multi-coeurs COTS semblent tout indiqués pour répondre au contraintes économiques propre aux prochaines générations de systèmes embarqués, ils s'avèrent incompatible avec les exigences de sûreté temporelle.
+% Les systèmes temps-réels sont des systèmes devant assurer leur fonction en \emph{temps bornés}.
+% Cela signifie que les fonctions doivent respecter des échéances sous peine d'entraîner une défaillance du système.
+% La vérification du respect des échéances est un enjeu majeur de la conception des systèmes temps-réel.
+% Cela passe notamment par le calcul du pire temps d'exécution (WCET\footnote{Worst Case Execution Time}) des applications sur le matériel ciblé.
+% Le calcul du WCET est un problème difficile, nécessitant de pouvoir raisonner sur le temps de réponse du matériel dans les pire cas.
+% Ainsi, le \emph{déterminisme} est un critère important dans le choix du support d'exécution d'un système temps-réel.
+% Le WCET est traditionellement calculé \emph{en isolation}, c'est à dire que l'on fait l'hypothèse de l'absence d'influence extérieures sur celui-ci.
+% Dans les systèmes intégrés, cela se traduit par le nécessité de garantir l'isolation temporelle des fonctions partageant le même calculateur.
+% En d'autres termes, le temps d'exécution d'une fonction sur un calculateur ne doit pas dépendre des autres.
+
+% Le problème est que les processeurs multi-coeurs n'assurent pas l'isolation temporelle pour les tâches s'exécutant en parallèle.
+% L'origine de ce problème se situe dans le partage de ressources matérielles entre les coeurs, plus particulièrement celles du système mémoire.
+% L'exécution de plusieurs applications en parallèle peut entraîner de la contention sur ces ressources, causant ainsi des ralentissements.
+% On parle alors d'\emph{interférences}.
+% Les retards causés par les interférences peuvent être significatifs.
+% Ne pas les prendre en compte dans le WCET peut entrainer des dépassements d'échéances.
+
+
+% Les interférences ajoutent donc au WCET d'une application, une pénalité dépendant de trois facteurs : le comportement du matériel en cas d'interférence, l'utilisation que fait l'application du matériel et le comportement des applications s'exécutant en parallèle.
+% Le premier et le dernier de ces facteurs posent problème.
+% D'une part, les processeurs multi-coeurs COTS que nous considérons sont notoirement complexes, et surtout leur comportement précis est peu documenté.
+% D'autre part, le comportement de toutes les applications n'est pas forcemment connu précisemment.
+
+% % Les interférences sont un sérieux frein à l'adoption des processeurs multi-coeurs pour des applications temps-réel.
+% % Déterminer l'ampleur de ces ralentissements est, en effet, difficile.
+% % L'opacité et la complexité du matériel considéré rends difficile l'application de techniques de calcul de WCET classiques.
+% % Tandis que les approches basées sur des tests, jugées non sûres, nécessite de conduire un grand nombre d'expériences.
+
+
+% Dans ce document nous traiterons de la caractérisation de la sensibilité d'une application aux interférences à partir de la caractérisation de son comportement en \emph{isolation}.
+% Le but étant de pouvoir déterminer \emph{à priori} la sensibilité d'une application à ce problème, sans avoir à recourir à d'importantes campagnes de tests.
+% Les processeurs COTS étant notoirement complexes et opaques, nous nous attacherons à faire, autant que possible, le moins d'hypothèses possibles sur le matériel.
+% Nous considérerons donc ce dernier comme une boite noire.
+% Considérant que la sensibilité aux interférences dépends autant du comportement de l'application que celui du matériel.

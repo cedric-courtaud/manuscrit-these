@@ -1,0 +1,46 @@
+\begin{tabular}{r c l}
+\toprule
+Canal & Type\footnotemark & Interférence\\
+\midrule
+Bus système 	& T & contention causée par les coeurs \\
+				& T & Contention causées par les périphériques \\
+				& T & Contention causées par les procoles de \\
+				&   & cohérences \\ 
+
+\midrule
+
+Passerelles 	 & \multirow{2}{*}{T} & \multirow{2}{*}{Contentions causées par les autres bus} \\
+d'interconnexion & & \\
+
+\midrule
+Mémoire principale & S & Fermetures de pages par d'autre applications \\
+				   & T & Réordonancements de requêtes d'accès \\
+
+\midrule
+Caches partagés & S & Éviction de donnés par d'autres applications \\
+				& T & Accès concurrent au cache \\
+				& S & Invalidation de données par les protocoles de \\
+				&   & cohérences \\
+
+\midrule
+Caches locaux   & S & Invalidation de données par les protocoles de \\
+				&   & cohérences \\
+
+\midrule
+TLB 			& S & Invalidation d'entrées par les protocoles de \\ 
+				&   & cohérences \\
+
+\midrule
+Périphériques & T & Contention entre applications \\
+			  & T & Routage des interruptions \\
+
+\midrule
+Étages des pipeline & T & Contention dans les architectures hyperthreadés \\
+
+\midrule
+Unité logiques 			  & \multirow{2}{*}{T} & \multirow{2}{*}{Contention entre applications.} \\
+(Coprocesseurs, GPU, ...) & & \\
+
+\bottomrule
+\footnotetext{S : spatial T : temporel}
+\end{tabular}

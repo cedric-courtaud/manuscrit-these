@@ -1,0 +1,164 @@
+% !TEX root = ../main.tex
+\chapter{Gestion des interférences}
+
+Dans le chapitre précedents, nous avons vu que les processeurs multi-coeurs COTS présente le problème des interférences dues au partage de matériel entre les coeurs.
+Ces interférences étant à l'origine de ralentissements pour les applications s'exécutant en parallèle, elles posent particulièrement problème dans les systèmes temps-réels.
+Ce chapitre expose les problématiques liées à l'utilisation de processeurs multi-coeur COTS dans ce type de système.
+
+PLAN.
+
+\section{Analyse de pire temps d'exécution}
+
+La question de comment étendre efficacement les techniques de verification temporelle utilisés dans les systèmes mono-coeurs à des systèmes multi-coeurs présentant des canaux d'interférences est encore ouverte.
+Les résultats des dix dernières années de recherche dans ce domaine a été passé en revue par Maiza et al.~\cite{maiza2018survey}.
+La prise en compte des interférences a été experimentée aussi bien lors de l'analyse de pire temps d'exécution que lors de l'analyse d'ordonancement.
+
+Les analyses étendant l'analyse de pire temps d'execution ne prennent pas en compte le contexte d'ordonancemcent.
+On distingue alors deux types d'approches:
+\begin{itemize}
+	\item L'approche de Murphy considère toutes les interférences possibles sur les ressources partagés.
+	En plus de ne pas toujours être applicable, il faut pouvoir borner la pénalité d'accès), cette approche est extremememt pessimiste.
+	\item Les approches complêtement intégrée, intègre l'intégralité des tâches du sytème pouvant s'exécuter en parallèle dans l'analyses.
+	Le surcoût induit par les interférences étant déterminés à partir de tout les entrelacemcents d'accès possibles sur les ressources partagées.
+	Ces approches permettent donc en théorie une précision maximale, mais leur applicabilité est incertaine, que ce soit en terme de passage à l'échelle ou du niveau d'information nécessaire à leur mise en oeuvre. 
+\end{itemize}
+
+La majorité des travaux intègrent le coût des interférences dans l'analyse d'ordonancabilité.
+On part alors des pire temps d'exécution en isolation, et on intègre le surcoût dus aux interférences dans le calcul du temps de réponse des tâches du système en fonction de la consommation de ressources partagés des tâches du système.
+Le principal avantage de cette approche est de pouvoir prendre en compte le contexte d'ordonancement, c'est à dire le comportement des autres tâches, dans le calcul du surcoût temporel.
+Le comportement des autres tâches n'est néanmoins pas toujours connu.
+C'est par exemple le cas pour les tâches non critiques dans un système à criticité mixte.
+Dans ce cas, des hypothèses pessimistes sur la consommation mémoire doit être faite.
+
+Toute analyse d'interférence repose sur un modèle du système mémoire.
+Nous allons maintenant exposer comment celui ci est modelisé dans l'analyse de pire temps d'exécution.
+Maiza et al. distingue les analyses portant sur les bus, celles portant sur la mémoire et celles combinant plusieurs types de ressources.
+Nous ajoutons une distinction supplémentaire pour la mémoire en considérant séparemment les caches et la mémoire principale.
+
+\subsection{Prise en compte des différents composants}
+\subsubsection{Caches partagés}
+
+Les interférences dans les caches partagés ont été pris en compte très tôt dans la littérature.
+Les analyses de caches partagés visent à calculer de façon sure, le nombre de défaut de caches supplémentaires induits par les interférences.
+Les premières analyses de ce type sont completement intégrées et se limite au cas des caches d'instructions partagés~\cite{2008_Yan_WCET_analysis_for_Multi_Core_processors_with_shared_L2_instruction_caches,2009_hardy_using_bypass_to_tighten_WCET_estimates_for_Multi_Core_processors_with_shared_instruction_caches,2009_Li_Timing_analysis_of_concurrent_programs_running_on_shared_cache_Multi_Cores,zhang2009accurately}.
+La prise en compte des caches de données a été faite ultérieurement.
+Gustavson et al.~\cite{2010_Gustavsson_towards_WCET_analysis_of_multicore_architectures_using_UPPAAL} propose une analyse reposant sur les techniques de \emph{model checking}~\cite{}.
+Les tâches et le matériel sont modelisé à l'aide d'automates temporisés~\cite{}.
+Malgré des hypothèse très simplificatrices sur ce le matériel, cette approche se heurte a des problèmes d'explosion combinatoires.
+
+Les travaux de Hardy et al.~\cite{2009_hardy_using_bypass_to_tighten_WCET_estimates_for_Multi_Core_processors_with_shared_instruction_caches} et Lesage et al.~\cite{2010_Lesage_shared_data_caches_conflicts_reduction_for_WCET_computation_in_Multi_Core_architectures} introduisent tout deux une notion de \emph{bypass} permettant de réduire les interférences.
+L'iddée est de ne pas charger dans le cache les données qui ne sont utilisée qu'une seule fois.
+
+Notons également que si les interférences spatiles sont évidentes pour les caches, les interférences temporelles existent, et ne sont pas prise en compte dans ces travaux.
+Ce problème a été montré par Valsan et al.\cite{valsan2016taming}.
+
+\subsubsection{Mémoire principale}
+
+Wu, et al \cite{2013_Wu_Worst_case_analysis_of_DRAM_latency_in_multi_requestor_system} ont effectué une analyse de pire temps d'exécution, sur un contrôleur dérivé des modèles utilisés sur les plates-formes COTS utilisant une politique de gestion des \emph{row-buffer} de type \emph{open-row} couplé avec une privatisation des bancs mémoire où chaque consommateur se voit alloué en exclusivité un sous ensemble des bancs de la mémoire physique.
+Les auteurs ont notamment démontré que les fonctionnalités de réordonnancent couramment utilisées dans les contrôleurs COTS peuvent conduire à des latences non bornées et proposent des modifications minimes pour augmenter la prédictibilité du contrôleur. Une analyse de pire temps d'exécution a ensuite été effectuée sur l'architecture ainsi modifiée, pour déterminer les pires latences qu'une tâche exécutée sur un cœur peut être amenée à subir lorsque des demandeurs (DMA, cœurs additionnels) effectuent de nombreux accès à la mémoire.
+
+Kim et al ont \cite{2014_kim_Bounding_memory_interference_delay_in_COTS_based_multi_core_systems} développés une modélisation boite blanche d'un contrôleur mémoire COTS utilisant une politique d'ordonnancement FR-FCFS couplé a une politique de gestion des \emph{row-buffers} de type \emph{open-row} pour borner les retards temporels générés par les interférences mémoires.
+Pour obtenir un pire temps d'exécution le moins pessimiste possible les auteurs ont utilisés deux approches orthogonales.
+Une approche dite \emph{request-driven} dans laquelle ils se concentrent sur le nombre de requêtes générées par une tâche et sur les délais maximums qui peuvent les retarder.
+Et une approche dite, \emph{job-driven}, dans laquelle ils étudient les ralentissements issues des interférences générées par les requêtes mémoire émises par les autres cœurs.
+Les deux approches ont été combinées en choisissant les résultats les plus optimistes.
+
+\subsubsection{Bus}
+
+Consommation mémoire: quantitatives avec des courbes d'arrivées. Borne sur bp. possible d'extraire avec de l'analyse statique.
+
+conclusions. Problème de scalabilité. Criticité mixte -> comment modélisé l'activité ? Simplifications sur le matériel. Dur à lever sur du COTS => opacité et type d'optimisations.
+
+
+\section{Études expérimentales}
+
+
+
+\section{Isolation des ressources matérielles}
+
+
+Améliorer l'isolation du matériel a deux bénéfices : réduire l'éventualité d'interférence et simplifier l'analyse du système.
+Nous distinguons deux types d'isolation:
+\begin{itemize}
+	\item L'isolation spatiale vise à empêcher le vol des ressources d'un coeur par un autre.
+	\item 
+\end{itemize}
+
+\subsection{Isolation spatiale}
+
+L'isolation spatiale a pour but d'éviter les interférnces spatiales.
+En pratique, cela consiste surtout à partitionner des mémoires partagées (caches, DRAM) entre les différents coeurs.
+Ce partitionement peut être effectué en utilisant du support matériel, mais aussi des techniques logicielles comme la \emph{coloration de pages}.
+
+\subsubsection{Coloration de page}
+
+
+\subsubsection{Support matériel}
+
+Isolation spatiale par des moyens logiciels ou matériels. 
+Mise en ouevre dans les mémoires: caches et DRAM.
+
+Mise en oeuvre pour les caches.
+
+Support matériel
+
+Principe de la coloration de pages.
+
+Mise en oeuvre pour d'autre ressources.
+Par de le coloration de pages.
+
+\subsection{Isolation temporelle}
+
+Beaucoup de travaux théorique font hypothèse de bus TDMA. En pratique souvent non documenté.
+
+Solution la plus simple: par l'ordonancement. Adopté par PikeOS pour des systèmes criticité mixte.
+Désactivation de tout les coeurs sauf un lorsque appli critique. Simple mais pas efficace.
+
+Tentative de raffinement via modèle d'exécution déterministes: PREM.
+Découpage de l'application en plusieurs phases: Acquisition, Execution, Restitution.
+Ordonancement avec execution parallèle et communication sequentielles.
+Sous utilisation du bus. Pas applicable au legacy.
+
+Implémentation d'un bus TDMA en soft sur archi powerPC. Maintient de l'invariant toutes pages avec un mapping valide est verrouillé en cache. Sur défaut de page, attente d'une fenetre temporelle et chargement de la page. Rends l'exécution déterministe.Compatible legacy. PB de performance et de portabilité.
+
+
+\subsection{Isolation spatiale}
+
+isolation spatiale => partitionnement des ressources.
+Utilise soit du support matériel, soit coloration.
+
+Le support matériel pour garantir de l'isolation spatiale dans les caches est assez répandu, y compris dans les architecture COTS.
+Les plus courantes étant le \emph{verrouillage de lignes} et \emph{le verrouillage de voie}.
+Le verrouillage de ligne permet de protéger explicitement une donnée, au moyen d'une instruction dédiée.
+Cette méthode offre une granularité fine, mais requiert d'expliciter quelles données doivent être protégées.
+Le verrouillage de voie permet d'influer sur la politique de remplacement des caches partiellement associatifs en restreignant les voies qui pouvant être utilisée.
+Cette méthode permet de partitionner les caches partagés en allouant des ensembles disjoints de voies à chaque coeur.
+Ainsi les données d'un coeur peuvent être protégée sans avoir à les expliciter, au prix nénamoins d'une granularité assez faible.
+Cette granularité peut néanmoins être améliorer en utlisant conjointement de la coloration de pages.
+
+La coloration de page~\cite{taylor1990tlb} est une technique logicielle visant à améliorer l'allocation de pages en encodant une \emph{couleur} à l'aide de certains bits des adresse physiques.
+Cette technique a notamment été utilisée dans les systèmes mono-coeurs avec des caches physiquement indexés pour réduire les défauts de caches au sein d'une même application~\cite{kessler1992page,1996_bugnion_Compiler_directed_page_coloring_for_multiprocessor,romer1994dynamic,sherwood1999reducing}.
+Ces techniques repose sur une coloration de pages avec les bits utilisés à la fois comme index par le cache et comme addresse de page par la MMU(Figure).
+Cette encodage permet de guarantir que deux pages avec des couleurs différentes ne peuvent occupper les mêmes sets de cache.
+Les défauts de cache sont réduits en associant des pages physiques de couleurs différentes aux pages virtuelles adjacentes.
+
+En multi-coeur, la coloration de pages permet de partitionner des ressources en allouant des ensembles de couleurs disjoints aux différents coeurs.
+Elle peut êter appliquée à des ressources aussi diverses que les caches~\cite{ward2013outstanding,bui2008impact}, les bancs mémoires~\cite{yun2014palloc}, les canaux DDR~\cite{muralidhara_reducing_2011}, ou encore les TLB~\cite{panchamukhi_providing_2015}.
+La coloration de page a deux inconvénients: elle complique l'allocation de pages (Bui et al.~\cite{bui2008impact} ont montré que l'allocation optimale de couleur était NP-difficile) et elle peut augmneter la pression mémoire.
+Ces inconvénients font que le support pour la coloration n'est pas présent dans tout les systèmes d'exploitation.
+C'est notamment le cas de Linux~\cite{}.
+Afin de remédier à ce problème, Yun et al. ont proposé \textsc{PALLOC}~\cite{yun2014palloc}, un allocateur de pages pour le noyau Linux gérant la coloration de pages.
+Cette allocateur permet notamment de choisir les bits utilisés pour l'encodage de couleur.
+Il est notamment utilisé pour la coloration de caches et de bancs mémoires.
+
+En plus d'être une source d'indéterminisme, les interférences dans les caches partagées dégradent les performaces.
+A cet effet, des solutions de gestion de caches ont été proposés dans la communauté système.
+Dans les systèmes temps-réel, l'utilisation de la coloration de page a été suggéré assez tôt~\cite{bui2008impact}.
+
+
+
+Problèmes de l'isolation spatiales. Gestion au niveau de l'OS NP-dur. Solutions par Ward et al.
+Pas implémenté partout. Palloc.
+Compromis isolation/performance. En général, augmente la pression mémoire.
+
+\section{Solution Antoine}

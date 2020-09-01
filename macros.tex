@@ -1,0 +1,24 @@
+
+% ==========================================
+% Long dash
+% ==========================================
+\ExplSyntaxOn
+\NewDocumentCommand{\longdash}{ O{2} }
+ {
+  --\prg_replicate:nn { #1 - 1 } { \negthinspace -- }
+ }
+\ExplSyntaxOff
+
+% ===========================================
+% Program names
+% ===========================================
+\newcommand\mibench{\textsc{MiBench}\xspace}
+\newcommand\parsec{\textsc{PARSEC}\xspace}
+\newcommand\valgrind{\textsc{Valgrind}\xspace}
+
+% ===========================================
+% Table stuff
+% ===========================================
+\newcommand\tcheck{$\times$}
+\newcommand\tpros{v}
+\newcommand\tcons{x}

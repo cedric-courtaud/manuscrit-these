@@ -1,0 +1,899 @@
+% !TEX root = ../main.tex
+
+\chapter{\label{chapitre:evaluer_impact}Évaluer l'impact des interférences mémoires}
+
+%\minitoc
+
+%In this section, we present a methodology to study the impact of interferences on a given hardware platform.
+%First we present a set of microbenchmarks that cover a wide range of memory behavior.
+%Then we describe the experimental platform used in this article.
+%This is followed by a description of our interference measurement protocol.
+%Finally, we evaluate the range of sensitivity covered by our microbenchmarks.
+
+Dans ce chapitre, nous nous penchons sur l'étude empirique de l'ampleur du phénomène d'interférences sur une carte multi-cœur COTS.
+Cette étude a non seulement pour but de déterminer l'impact des ralentissements subis, mais également à quel point ces ralentissements peuvent varier.
+Cela pose deux difficultés auxquelles nous allons apporter des solutions dans ce chapitre.
+La première étant d'identifier les aspects pertinents du trafic mémoire pour le problème d'interférences. 
+La seconde est d'avoir un ensemble d'applications représentatives de ces différents aspects.
+
+Ce chapitre est organisé en trois sections.
+Dans la première section, nous présenterons la plateforme matérielle de référence sur laquelle nous conduirons le reste de nos travaux.
+Dans la deuxième section, nous présenterons un modèle événementiel nous permettant d'identifier différents aspects du comportement d'accès à la mémoire d'un programme.
+Nous introduirons, dans la section suivante, un ensemble de microbenchmarks paramétrables permettant de générer différents types de trafic.
+Enfin, dans la quatrième section, nous utiliserons ces microbenchmarks pour étudier l'impact des interférences sur notre matériel de référence.
+
+\input{chapters/plateforme}
+
+\section{Un modèle événementiel du trafic mémoire}
+
+Pour étudier la sensibilité des programmes aux interférences mémoires, nous devons représenter l'interaction entre une application et le système mémoire.
+Nous adopterons à cette fin un \emph{modèle événementiel} du trafic mémoire représentant le \emph{flux explicite de requête d'accès vers un système mémoire partagé} qui sont générées lors de l'exécution d'un programme.
+
+L'exécution d'un programme est représentée par sa \emph{trace}, c'est à dire par la suite d'instructions qui ont été exécutées.
+Une trace correspond au parcours d'un chemin dans le graphe de flots de contrôle.
+Nous supposerons toujours la terminaison du programme, et donc que le nombre d'instructions dans une trace est fini.
+Nous noterons celui-ci $N_{inst}$.
+
+L'exécution d'une instruction entraîne une interaction avec le matériel, qui peut impliquer des éléments partagés du système mémoire.
+Afin de ne pas modéliser le matériel en détail, et dans un souci de généricité, ces éléments sont regroupés dans une \emph{boite noire} représentant la mémoire partagée dans son ensemble.
+Lorsqu’ une instruction interagit avec un composant appartenant à cette boite noire, une \emph{requête d'accès} est émise vers celle-ci.
+Une requête d'accès peut être émise dans deux cas précis:
+\begin{itemize}
+	\item Lors d'une instruction d'accès à la mémoire.
+	\item Lors du chargement d'une instruction.
+\end{itemize}
+Nous pouvons ainsi associer à toute trace d'exécution une suite de requêtes d'accès émises.
+Cette suite est également finie, et nous notons son nombre d'éléments $N_{access}$.
+Une requête mémoire est caractérisée par un \emph{sens}, une instruction de source et une adresse de destination.
+
+Ce modèle représente le trafic généré \emph{explicitement} par l'application.
+Sur un processeur moderne, le trafic généré peut être différent.
+Il y a deux raisons à cela.
+D'une part, les instructions peuvent être exécutées dans le désordre.
+D'autre part, les mécanismes spéculatifs (prédiction de branchements, préchargements de données) peuvent également entraîner des accès qui ne sont pas représentés par le modèle.
+Ce trafic \emph{implicite} varie fortement en fonction du matériel considéré.
+Pour le prendre en compte, il faudrait pouvoir modéliser finement ce dernier, ce qui serait incompatible avec une vision boite noire de celui-ci.
+
+La trace considérée correspond à la suite d'instruction obtenue en parcourant le graphe de flot de contrôle du programme.
+Sur un processeur moderne, ces instructions peuvent être exécutées dans un ordre différent.
+De plus, les mécanismes de spéculation (prédiction de branchements, préchargement de données) peuvent causer des accès supplémentaires qui ne sont pas capturés.
+C'est une limitation de cette représentation.
+
+Nous aurons par la suite souvent recours à une représentation graphique de l'activité mémoire.
+La trace d'exécution y est représentée par une suite de points colorés.
+Les instructions ne déclenchant pas d'accès vers la mémoire y sont représentées par des petits points gris, tandis que les déclenchant des accès sont représentés par de gros points colorés (bleu pour les requêtes en lecture et rouge pour les requêtes en écriture).
+La flèche indique le sens d'exécution~\footnote{En cas d'omission de cette flèche, on considérera le sens de lecture habituel. C'est à dire gauche à droite et de haut en bas.}.
+Cette représentation nous donne de premières indications sur les variations de comportements d'accès à la mémoire.
+Cette représentation de la trace permet d'identifier aisément plusieurs caractéristiques du comportement d'accès à la mémoire.
+La proportion d'accès à la mémoire par rapport au nombre total d'instructions exécutées indique l'intensité de l'utilisation de la mémoire.
+La représentation des types d'accès permet de caractériser la proportion de lectures et d'écritures, mais aussi de leur entrelacement.
+
+\begin{center}
+	\includegraphics[width=0.8\linewidth]{graphics/figures/template-profils-evenementiels-trace.pdf}
+\end{center}
+
+Nous pouvons également représenter l'interaction avec la mémoire.
+Cette dernière est représentée par un tableau de case mémoire.
+Chaque case est identifiée par une adresse.
+Comme pour la trace d'exécution une flèche indique dans quelle direction évoluent les adresses\footnote{La remarque faite précédemment pour le sens de lecture des traces d'exécutions en cas d'omission de la flèche s'applique également pour la mémoire.}.
+
+\begin{center}
+	\includegraphics[width=0.8\linewidth]{graphics/figures/template-profils-evenementiels-memoire.pdf}
+\end{center}
+
+Enfin, l'interaction entre la trace d'exécution et la mémoire est représentée par des flèches.
+Ces flèches, et en particulier leur entremêlement, permettent de juger du type de séquence d'accès effectués.
+
+\begin{center}
+	\includegraphics[width=0.8\linewidth]{graphics/figures/template-profils-evenementiels-all.pdf}
+\end{center}
+
+\section{Microbenchmarks}
+
+Afin d'évaluer l'impact des interférences sur une cible matérielle donnée, nous souhaitons pouvoir reproduire une multitude de cas de consommation mémoire différents.
+Si des microbenchmarks destinés à l'étude du système mémoire existent, par exemple \textsc{STREAM}~\cite{McCalpin1995}, ils ne sont pas adaptés à nos besoins, car destinés à l'évaluation des limites de performances des systèmes mémoires.
+\textsc{STREAM}, par exemple, génère le trafic le plus intense possible en ne suivant qu'un seul type de séquence d'accès.
+
+Nos microbenchmarks diffèrent des solutions existantes, car ils sont conçus dans l'objectif d'offrir la possibilité de générer des comportements d'accès variés, aussi bien en nature qu'en intensité.
+À cet effet, nous avons conçu un algorithme générique pour varier les comportements mémoires, dont le pseudocode est donné par l'algorithme~\ref{alg:microbench}.
+Cet algorithme consiste en la répétition d'une séquence d'accès vers une structure de données en mémoire.
+Cette séquence consiste en trois étapes:
+\begin{enumerate}
+	\item Une \emph{boucle de lecture} durant laquelle des données sont lues depuis la mémoire et agrégées dans une variable.
+	\item Une \emph{boucle de calcul}, dans laquelle la valeur agrégée dans la boucle d'écriture est transformée à l'aide d'opérations arithmétiques simples.
+	Le but de cette boucle est d'inhiber le trafic généré par le microbenchmark en faisant des opérations ne mettant en jeu que des ressources locales à un cœur.
+	\item Une \emph{boucle d'écriture} où la valeur produite par la boucle de calcul est écrite en mémoire.
+\end{enumerate}
+
+% \begin{figure}[!h]
+% 	\centering
+% 	\begin{tabular}{c c}
+% 	\begin{subfigure}{0.25\linewidth}
+% 		%\centering
+% 		\includegraphics[width=\linewidth]{graphics/figures/algo-sequences-rcw.pdf}
+% 		\caption{\label{fig:sequences_rcw}RCW}
+% 	\end{subfigure} &
+	
+% 	\begin{subfigure}{0.25\linewidth}
+% 		%\centering
+% 		\includegraphics[width=\linewidth]{graphics/figures/algo-sequences-rcwc.pdf}
+% 		\caption{\label{fig:sequences_rcwc}RCWC}
+% 	\end{subfigure} \\
+% 	\end{tabular}
+% \end{figure}
+
+\begin{algorithm}
+\begin{algorithmic}
+
+\Function{AccessSequence}{$(R, W, C, P_R, P_W)$}
+  \For{$i \gets \text{1 to $N$}$}
+  \Comment{La séquence est répétée $N$ fois}
+	  \For{$j \gets \text{1 to $R$}$}
+	  \Comment{Boucle de lecture}
+	  \State{$v \gets P_R.read(R, pos, v)$}
+	  \State{$pos \gets pos + R$}
+
+	  \EndFor
+	  
+	  \For{$j \gets \text{1 to $C$}$}
+	  \Comment{Boucle de calcul}
+	    \State{$v \gets local\_computation(v)$}
+	  \EndFor
+	  
+	  \For{$j \gets \text{1 to $W$}$}
+	  \Comment{Boucle d'écriture}
+	  	\State{$P_W.write(W, pos, v)$}
+	  	\State{$pos \gets pos + W$}
+	  \EndFor
+  \EndFor
+\EndFunction
+
+\end{algorithmic}
+\caption{\label{alg:microbench} Microbenchmark}
+\end{algorithm}
+
+Le comportement des trois boucles composants une séquence d'accès est configurable.
+Ainsi, les paramètres $R$, $W$ et $C$ donne respectivement le nombre d'itérations des boucles de lectures, d'écritures et de calcul.
+
+Le paramètre $C$ est directement lié à l'intensité du trafic généré par le microbenchmark, c'est-à-dire la proportion d'instructions générant des accès à la mémoire parmi toutes les instructions exécutées.
+Cependant, l'effet de $C$ dépends directement des paramètres $R$ et $W$, car ceux-ci définissent le nombre d'accès à la mémoire effectuée lors d'une séquence d'accès.
+C'est pourquoi nous utiliserons plutôt le nombre d'itérations de boucle de calcul pour désigner l'intensité supposée du trafic généré.
+
+\begin{equation}
+	F = \frac{C}{R+W}
+	\label{eq:throttle_rate}
+\end{equation}
+
+Les paramètres $R$ et $W$ influent à la fois sur la proportion d'accès en lecture et en écriture du trafic généré, mais aussi sur l'entrelacement de ces accès et la longueur des rafales d'accès successifs vers la mémoire.
+Ceci est illustré par le tableau~\ref{table:effet_parametres_sequence_acces} illustrant l'effet des paramètres $R$ et $W$, pour une valeur de $F$ et un nombre égal de lectures et d'écritures.
+Ce tableau montre qu'un grand nombre total d'accès ($R+W$) implique à la fois un plus grand nombre d'accès successifs vers la mémoire, mais un plus faible entrelacement des lectures et des écritures.
+Nous avons pu voir, dans la section~\ref{section:plateforme_materielle} que ces aspects sont pris en compte par la politique d'ordonnancement du contrôleur mémoire de notre plateforme matérielle.
+Notre microbenchmark permet donc de générer des trafics mémoires de même intensité et de mêmes ratios lectures/écritures qui sont néanmoins significativement différents.
+
+% \begin{figure}
+% 	\begin{tabular}{c c}
+% 	RCW & RCWC \\
+% 	\begin{subfigure}[t]{0.5\linewidth}
+% 		\includegraphics[width=\hsize]{graphics/figures/microbenchmark_tmp_rcw_6_6_12.pdf}
+% 		\caption{$R=6$ $W=6$ $C=12$}
+% 	\end{subfigure} & 
+% 	\begin{subfigure}[t]{0.5\linewidth}
+% 		\includegraphics[width=\linewidth]{graphics/figures/microbenchmark_tmp_rcwc_6_6_12.pdf}
+% 		\caption{$R=6$ $W=6$ $C=6$}
+% 	\end{subfigure} \\
+% 	\begin{subfigure}[t]{0.5\linewidth}
+% 		\includegraphics[width=\hsize]{graphics/figures/microbenchmark_tmp_rcw_3_3_6.pdf}
+% 		\caption{$R=3$ $W=3$ $C=6$}
+% 	\end{subfigure} & 
+% 	\begin{subfigure}[t]{0.5\linewidth}
+% 		\includegraphics[width=\hsize]{graphics/figures/microbenchmark_tmp_rcwc_3_3_6.pdf}
+% 		\caption{$R=3$ $W=3$ $C=3$}
+% 	\end{subfigure} \\
+	
+% 	\begin{subfigure}[t]{0.5\linewidth}
+% 		\includegraphics[width=\hsize]{graphics/figures/microbenchmark_tmp_rcw_1_1_2.pdf}
+% 		\caption{$R=1$ $W=1$ $C=2$}
+% 	\end{subfigure} &
+	
+% 	\begin{subfigure}[t]{0.5\linewidth}
+% 		\includegraphics[width=\hsize]{graphics/figures/microbenchmark_tmp_rcwc_1_1_2.pdf}
+% 		\caption{$R=1$ $W=1$ $C=1$}
+% 	\end{subfigure} \\
+% 	\end{tabular}
+% 	\caption{\label{fig:microbenchmarks_params_effet_temporelle}}
+% \end{figure}
+
+
+\begin{table}[h!]
+	\centering
+	\caption{\label{table:effet_parametres_sequence_acces} Effet des paramètres $R$ et $W$ sur le trafic généré}
+	\begin{tabular}{c c c c c r}
+		$R$ & $W$ & $F$ & $C$& \\
+		\midrule
+		 1 & 1 & 1 & 2 & \raisebox{-0.525\totalheight}{\includegraphics[width=0.65\linewidth]{graphics/figures/templates-microbenchmarks-rcw-1-1-2.pdf}}\\
+		 3 & 3 & 1 & 6 & \raisebox{-0.525\totalheight}{\includegraphics[width=0.65\linewidth]{graphics/figures/templates-microbenchmarks-rcw-3-3-6.pdf}}\\
+		 6 & 6 & 1 & 12 & \raisebox{-0.525\totalheight}{\includegraphics[width=0.65\linewidth]{graphics/figures/templates-microbenchmarks-rcw-6-6-12.pdf}}\\
+		 \bottomrule
+	\end{tabular}
+\end{table}
+
+\subsection{Politique d'accès}
+
+En plus de leur nombre d'itérations, le comportement des boucles de lectures et d'écritures peut être modifié par le biais de \emph{politique d'accès}, que nous désignons par les paramètres $P_R$ et $P_W$.
+Nous avons défini et implanté sept politiques d'accès différentes, dont les caractéristiques sont résumées dans le tableau~\ref{table:recap_politiques d'accès}.
+Ces politiques se distinguent notamment par le type de la structure de données accédées, ainsi que par la localité de la séquence des accès.
+
+\begin{table}
+	\centering
+	\renewcommand{\arraystretch}{1.3}
+
+	\begin{tabular}{r c c}
+		\toprule
+		\textbf{Politique} & \textbf{Structure de données} & \textbf{Type d'accès} \\
+		\midrule
+		\texttt{linear} & \multirow{2}{*}{tableau} & séquentiel \\
+		\texttt{random} &  & aléatoire \\
+		\midrule
+		\texttt{linear-lookup} & \multirow{2}{*}{tableau de pointeurs} & séquentiel \\
+		\texttt{shuffled-lookup} &  & séquentiel et aléatoire \\
+		\midrule
+		\texttt{linear-list} & \multirow{2}{*}{liste chaînée} & séquentiel \\
+		\texttt{shuffled-list} &  & aléatoire \\
+		\midrule
+		\texttt{stream} & tableaux & parallèle et séquentiel \\
+		\bottomrule
+	\end{tabular}
+	\caption{\label{table:recap_politiques d'accès}Récapitulatifs des différentes politiques d'accès}
+\end{table}
+
+\subsubsection{Structures de données}
+
+Nous utilisons trois structures de données différentes:
+
+\begin{description}
+	\item[Tableau] Les données sont stockées dans un tableau. Ce sera le cas, quelle que soit la structure de donnée utilisée.
+	Ici, les données sont accédées directement en utilisant l'indexation.
+	\item[Tableau de pointeurs] Les données sont accédées en déférençant un pointeur. Les pointeurs sur les données sont stockés dans un tableau. Ce tableau est parcouru séquentiellement.
+	\item[Liste chaînée] Tout comme pour les tableaux de pointeurs les données sont accédées en déferencant un pointeur. La différence est qu'ici ces pointeurs sont stockés dans une liste chaînée.
+\end{description}
+
+Le choix d'une structure de donnée à des implications sur les dépendances de données présentes dans les boucles de lectures et d'écritures, et plus particulièrement celles concernant les adresses des données accédées lors d'un tour de boucle.
+Les dépendances de données ont pour effet de donner moins de liberté d'action au processeur pour le réordonnancement d'instructions.
+
+Dans le cas d'un parcours de tableau(figure~\ref{fig:array-deps}), l'adresse est calculée directement, il n'y a donc pas de dépendances à proprement parler.
+Il peut y avoir une dépendance entre les tours de boucles pour effectuer ce calcul, mais les valeurs en question étant généralement stockées dans des registres, celle-ci n'est pas significative.
+L'utilisation d'un tableau de pointeurs (figure~\ref{fig:lookup-deps}), introduit une dépendance pour déterminer l'adresse de destination.
+La conséquence est que le processeur ne peut pas réordonner les instructions au sein d'un même tour de boucle.
+Par contre, vu que le tableau de pointeur est parcouru séquentiellement, les itérations peuvent l'être.
+L'utilisation d'une liste chaînée (figure~\ref{fig:list-deps}) prévient ce degré de liberté en introduisant une dépendance de données entre les tours de boucles.
+
+\begin{figure}
+	\begin{tabular}{c c c}
+		\begin{subfigure}{0.33 \linewidth}
+			\includegraphics[width=\linewidth]{graphics/figures/array-dependencies.pdf}
+			\caption{\label{fig:array-deps}Tableau}
+		\end{subfigure}
+		\begin{subfigure}{0.33 \linewidth}
+			\includegraphics[width=\linewidth]{graphics/figures/lookup-dependencies.pdf}
+			\caption{\label{fig:lookup-deps}Tableau de pointeurs}
+		\end{subfigure}
+		\begin{subfigure}{0.33 \linewidth}
+			\includegraphics[width=\linewidth]{graphics/figures/list-dependencies.pdf}
+			\caption{\label{fig:list-deps}Liste chaînée}
+		\end{subfigure}
+	\end{tabular}
+	\caption{\label{fig:datastruct-deps}Dépendance de données intra et inter itérations pour les boucles d'accès mémoires en fonction de la structure de donnée utilisée.}
+\end{figure}
+
+\subsubsection{Politique d'accès}
+
+Un deuxième aspect régi par la politique d'accès est la succession d'adresse accédée lors de la séquence.
+Cela impacte notamment la localité spatiale du trafic émis par le microbenchmark.
+Les différentes politiques que nous implantons peuvent générer des suites d'adresses pouvant être catégorisées en trois types:
+
+\begin{itemize}
+	\item \emph{Accès séquentiels (ou linéaires)} La différence entre deux adresses successives est constante.
+	On appelle la différence entre deux adresses le \emph{pas (ou stride)}.
+	Il s'agit d'un type d'accès très courant, qui est notamment généré lors l'on parcourt un tableau (figure~\ref{fig:seq-linear}).
+
+	\item \emph{Accès aléatoires}. Il n'y a pas de relations claires dans l'enchaînement des adresses accédé.
+	Il s'agit du comportement réciproque aux accès séquentiels.
+	Nous utilisons ce type de séquence pour approximer les séquences d'accès les plus complexes (figure~\ref{fig:seq-linear}).
+		
+	\item \emph{Accès parallèle} Plusieurs séquences linéaires sont entrelacées.
+	Ce type de séquence représente en particulier le parcours de plusieurs tableaux en parallèle (figure~\ref{fig:seq-linear}).
+\end{itemize}
+
+\begin{figure}[h!]
+	\centering
+	\begin{subfigure}{0.65\linewidth}
+		\includegraphics[width=\linewidth]{graphics/figures/sequence-linear.pdf}
+		\caption{\label{fig:seq-linear}Accès séquentiels}
+	\end{subfigure}
+	\begin{subfigure}{0.65\linewidth}
+		\includegraphics[width=\linewidth]{graphics/figures/sequence-random.pdf}
+		\caption{\label{fig:seq-random}Accès aléatoires}
+	\end{subfigure}
+	\begin{subfigure}{0.65\linewidth}
+		\includegraphics[width=\linewidth]{graphics/figures/sequence-parallel.pdf}
+		\caption{\label{fig:seq-parallel}Accès parallèles}
+	\end{subfigure}
+	\caption{Types de séquences d'accès}
+\end{figure}
+
+La combinaison de ces différents aspects nous permet d'obtenir sept politiques d'accès différentes.
+
+\begin{enumerate}
+	\item La politique \texttt{linear} est un parcours séquentiel de tableau.
+	L'adresse accédée lors d'un tour de boucle est donc calculée en ajoutant un pas constant à l'adresse accédée lors de l'itération précédente.
+	Nous employons un pas de 32 octets, correspondant à la taille d'une ligne de cache sur notre plateforme matérielle.
+
+	\item  La politique \texttt{random} implante un parcours de tableau aléatoire.
+	L'adresse accédée est calculée à l'aide d'un générateur de nombre aléatoire.
+	Comme le tableau accède est un tableau d'entier de 32 bits, les adresses sont tout de même alignées sur 4 bits.
+	Afin de limiter le coût de calcul de l'adresse à accéder, nous sacrifions de l'indéterminisme au profit de la performance en utilisant un registre à rétroaction linéaire comme suggéré par Mars et al.~\cite{mars2011bubble} et montré dans l'algorithme~\ref{alg:lfsr}.
+
+	\item 
+
+\end{enumerate}
+
+\begin{lstlisting}[language=c, label=alg:lfsr, caption=Générateur de nombre pseudo-aléatoire utilisé dans la politique \texttt{random}~\cite{mars2011bubble}]
+	#define LFSR_DEFAULT_SEED 0xbadf00d
+	extern uint32_t lfsr = LFSR_DEFAULT_SEED;
+	
+	#define MASK 0xd0000001u
+	#define lfsr_rand() \
+	((lfsr = (lfsr >> 1u) ^ (uint32_t)(0 - (lfsr & 1u) & MASK)))
+\end{lstlisting}
+
+La politique \texttt{linear-lookup} utilise un tableau de pointeurs pour déterminer quelle adresse accéder.
+Le tableau est trié et les adresses séparées d'un pas constant, rendant la suite d'adresse finalement accédée séquentielle.
+La politique \texttt{shuffled-lookup} est similaire, sauf que le tableau de pointeurs est mélangé lors de l'initialisation du microbenchmark afin de rendre la suite d'adresse accédée aléatoire.
+
+La politique \texttt{linear-list} utilise une liste chaînée.
+Les nœuds sont stockés dans un tableau.
+Ce tableau est trié, un nœud pointe vers le nœud stocké dans la case de tableau adjacente, et deux nœuds adjacents pointent vers des données séparées par un pas constant. 
+\begin{center}
+	\includegraphics[width=0.7\linewidth]{figures/list-pool.pdf}
+\end{center}
+Ainsi le parcours de la liste engendre une suite d'accès linéaire.
+La politique \texttt{shuffled-list} est également similaire, à l'exception que le tableau de nœuds est mélangé à l'initialisation.
+
+La politique \texttt{stream} est une généralisation de la partie parallèle de la politique d'accès utilisé par le microbenchmark \textsc{STREAM}~\cite{STREAM}.
+Son usage est préconisé pour évaluer la capacité du matériel à traiter des accès en parallèle~\cite{black2013bandwidth}~\cite{valsan2016taming}.
+Cette politique correspond au parcours séquentiel de plusieurs tableaux en parallèle.
+Il s'agit d'un type d'accès rencontré fréquemment.
+
+\begin{lstlisting}[language=c]
+	offset = 0;
+	switch(read) {
+		case 16:
+			value += T[offset + pos];
+			offset += ARRAY_SIZE;
+		case 15:
+			value += T[offset + pos];
+			offset += ARRAY_SIZE;
+		...
+		...
+		case 1:
+			value += T[offset + pos];
+		default:
+			break;
+	} 
+
+\end{lstlisting}
+
+
+% The fetch and the write back loops are also governed by their respective access policies $P_R$ and $P_W$. 
+% The access policy defines the type of data structures being walked and the sequence of addresses accessed according to the pattern being enforced.
+% They are split in two groups summarized in Table~\ref{table:access_patterns}.
+% The three policies in the first group implement a single array walk following different access patterns: sequential or random.
+% The second group consists of policies redefining the one used to read data in the \textsc{STREAM} microbenchmark.
+% In this policy, two values read from two distinct arrays are summed.
+% The two arrays are walked sequentially and in parallel.
+% We extend this policy, by varying the number of elements to be read, the type of data structures being traversed, and the access pattern enforced.
+% Varying the number of elements read allows us to vary access interleaving.
+% We implement the sum of consecutive elements in a linked list because it involves a lot of data dependencies that may or may not be prefetched by the target hardware.
+% Finally, varying the access pattern allows us to vary the stress put on the prefetchers.
+
+% We retain thirteen of the $2^{11}$ possible combinations of read and write access policies.
+% Five are combinations of policies of the first group, two of these being particularly frequent in embedded systems.
+% In the first case, data are read and written sequentially.
+% Such behavior can be retrieved for instance with the \texttt{memcpy} function.
+% The second case corresponds to random reads followed by sequential writes.
+% This behavior is found when data are gathered from various sources (sensors for instance).
+% We also consider the duals  of these behaviors, namely fully random accesses (random reads and random writes) and data scattering (sequential reads and random writes).
+% Finally, we consider the case of lookup tables being used in the fetch and the write back loop, in order to mimic the case of the copy of linked data structures.
+% The eight remaining combinations reproduce and extend the structure of \textsc{STREAM}: the read access policy is picked from the first group and data are written sequentially.
+% To imitate the behavior of \textsc{STREAM}, we fixed the $R$ and the $W$ parameters. However the traffic can still be throttled.
+% 
+
+% \begin{minted}{c}
+% 	static inline int boucle_de_lecture(int read, int value, int pos){
+
+% 	}
+
+% 	static inline void pw_write(int write, int value, int pos) {
+
+% 	}
+
+% 	static inline int calcul(int value, int iter_nb) {
+% 		for (int i=0; i < iter_nb; i++) {
+% 			value = (value + i) ^ 0xbadf00d;
+% 		}
+
+% 		return value;
+% 	}
+
+% \end{minted}
+
+% \begin{minted}{c}
+% 	#define LFSR_DEFAULT_SEED 0xbadf00d
+
+% 	extern uint32_t lfsr;
+
+% 	static inline void lfsr_srand(uint32_t seed) {
+% 	    lfsr = seed;
+% 	}
+
+% 	#define MASK 0xd0000001u
+% 	#define lfsr_rand() ((lfsr = (lfsr >> 1u) ^ \\
+% 	 (uint32_t)(0 - (lfsr & 1u) & MASK)))
+% \end{minted}
+
+Ces politiques d'accès sont toutes disponibles en lecture et en écriture.
+Nous appelons \emph{comportement d'accès} une combinaison de politique d'accès en lecture et en écriture.
+Parmi les 49 combinaisons d'accès possibles nous en implantons 9 divisée en deux groupes et récapitulés dans le tableau~\ref{table:comportement_microbenchmarks}:
+\begin{itemize}
+	\item Le groupe \texttt{MemBench} comprend des combinaisons de toutes les politiques d'accès disponible à l'exception de \texttt{stream}.
+	\item Le groupe \texttt{Stream} ne comprend qu'un comportement qui est une généralisation du microbenchmark~\textsc{STREAM}~\cite{McCalpin1995}.
+\end{itemize}
+
+
+\newcommand\available{\checkmark}
+\newcommand\navailable{$\times$}
+
+\begin{table}
+	\centering
+	\renewcommand{\arraystretch}{1.3}
+	\resizebox{\linewidth}{!}{
+	\begin{tabular}{l l l l}
+		\toprule
+		\textbf{Groupe} & \textbf{Comportement} & \textbf{$P_R$} & \textbf{$P_W$} \\
+		\midrule
+		\multirow{8}{*}{\texttt{MemBench}} & \texttt{linear} & \texttt{linear} & \texttt{linear} \\
+						  & \texttt{random} & \texttt{random} & \texttt{random} \\
+						  & \texttt{scatter} & \texttt{random} & \texttt{random} \\
+						  & \texttt{gather} & \texttt{random} & \texttt{random} \\
+						  & \texttt{linear-lookup} & \texttt{linear-lookup} & \texttt{linear-lookup} \\
+						  & \texttt{shuffled-lookup} & \texttt{shuffled-lookup} & \texttt{shuffled-lookup} \\
+						  & \texttt{linear-list} & \texttt{linear-list} & \texttt{linear-list} \\
+						  & \texttt{shuffled-list} & \texttt{shuffled-list} & \texttt{shuffled-list} \\
+		\midrule
+
+		\texttt{Stream} & \texttt{stream} & \texttt{stream} & \texttt{stream} \\
+		\bottomrule
+	\end{tabular}
+	}
+	\caption{\label{table:comportement_microbenchmarks}Comportement d'accès implantés dans nos microbenchmarks}
+\end{table}
+
+% \begin{table}
+% 	\resizebox{\linewidth}{!}{
+% 	\begin{tabular}{c c c c c c c c c}
+% 		& & \multicolumn{7}{c}{$P_R$} \\
+% 		& & \texttt{sequential} & \texttt{random} & \texttt{lookup} & \texttt{s-lookup} &\texttt{list} & \texttt{s-list} & \texttt{stream} \\
+% 		\multirow{7}{*}{$P_W$} & \texttt{sequential} & \available & \available & \available &\available &\available &\available &\navailable \\
+% 		                       & \texttt{random} & \available & \available & \available &\available &\available &\available &\navailable \\
+
+% 		                       & \texttt{lookup} & \available & \available & \available &\navailable &\navailable &\navailable &\navailable \\
+% 		                       & \texttt{s-lookup} & \available & \available & \navailable &\available &\navailable &\navailable &\navailable \\
+% 		                       & \texttt{list} & \available & \available & \navailable &\navailable &\available &\navailable &\navailable \\
+% 		                       & \texttt{s-list} & \available & \available & \navailable &\navailable &\navailable &\available &\navailable \\
+% 		                       & \texttt{stream} & \navailable & \navailable & \navailable &\navailable &\navailable &\navailable &\available \\	
+% 	\end{tabular}}
+% 	\caption{\label{table:microbenchmarks_recap_dispo}Combinaisons de politique d'accès}
+% \end{table}
+
+% \begin{table*}
+% \caption{\label{table:access_patterns}Implemented access policies}
+%   \resizebox{\linewidth}{!}{
+% \begin{tabular}{r c c l}																																																													
+% \toprule
+% 	\textbf{Name} & \textbf{Data structure} & \textbf{Access pattern} & \textbf{Description} \\
+% \midrule
+% 	\texttt{sequential} & one array & sequential & Simple array walk. Apply a fixed offset to the previous address \\ 	
+% 	\texttt{random} & one array & random & Compute a random valid offset. \\
+% 	\texttt{lookup} & one array & random & Read sequentially the next entry of a shuffled array of offsets \\
+% \midrule
+% 	\texttt{sum-2} & two arrays  & sequential & Sum up two arrays sequentially. \textbf{Similar to \textsc{STREAM}.} \\
+% 	\texttt{sum-3} & three arrays & sequential & Sum up three arrays sequentially.\\
+% 	\texttt{sum-2-r} & two arrays  & random & Sum up two arrays. Two random offsets are computed. \\
+% 	\texttt{sum-3-r} & three arrays & random & Sum up three arrays. Three random offsets are computed. \\
+% 	\texttt{sum-2-l} & linked list & sequential & Add two consecutive elements of linked lists. Nodes are contiguous in memory \\
+% 	\texttt{sum-3-l} & linked list & sequential & Add three consecutive elements of linked lists. Nodes are contiguous in memory \\
+% 	\texttt{sum-2-lr} & linked list & random & Add two consecutive elements of linked lists. Nodes are shuffled in memory \\
+% 	\texttt{sum-3-lr} & linked list & random & Add three consecutive elements of linked lists. Nodes are shuffled in memory \\
+% \bottomrule
+% \end{tabular}
+% }
+% \end{table*}
+
+
+% \begin{table}[!h]
+% \caption{\label{table:access_policy}Pair of access policies used in the microbenchmarks}
+% \begin{tabular}[width=\textwidth]{r c c c c c l}
+%   \toprule
+% 	\textbf{} & \textbf{$R$} & \textbf{$W$}  & \textbf{$D$} & \textbf{$P_R$} & \textbf{$P_W$} \\
+%   \midrule
+% 	\texttt{linear} & \available & \available & \available  & \texttt{sequential} & \texttt{sequential}\\ 
+% 	\texttt{scatter} & \available & \available & \available  & \texttt{sequential} & \texttt{random} \\ 
+% 	\texttt{gather} & \available & \available & \available  & \texttt{random} & \texttt{sequential} \\ 
+% 	\texttt{random} & \available & \available & \available  & \texttt{random} & \texttt{random} \\ 
+% 	\texttt{lookup} & \available & \available & \available  & \texttt{lookup} & \texttt{lookup} \\
+%   \midrule
+% 	\texttt{sum-2} & \navailable & \navailable & \available & \texttt{sum-2} & \texttt{sequential} \\ 
+% 	\texttt{sum-3} & \navailable & \navailable & \available & \texttt{sum-3} & \texttt{sequential} \\ 
+% 	\texttt{sum-2-r} & \navailable & \navailable & \available & \texttt{sum-2-r} & \texttt{sequential} \\ 
+% 	\texttt{sum-3-r} & \navailable & \navailable & \available & \texttt{sum-3-r} & \texttt{sequential} \\ 
+% 	\texttt{sum-3-l} & \navailable & \navailable & \available & \texttt{sum-2-l} & \texttt{sequential} \\ 
+% 	\texttt{sum-3-l} & \navailable & \navailable & \available & \texttt{sum-3-l} & \texttt{sequential} \\ 
+% 	\texttt{sum-3-lr} & \navailable & \navailable & \available & \texttt{sum-3-lr} & \texttt{sequential} \\
+% 	\texttt{sum-3-lr} & \navailable & \navailable & \available & \texttt{sum-3-lr} & \texttt{sequential} \\ 
+%   \bottomrule
+% \end{tabular}
+% \end{table}
+
+% The rest of this section discusses the implementation and the evaluation of these microbenchmarks.
+% It is organized as follow.
+% In a first place, we discuss the desing choices of our microbenchmarks, firstly we present their architecture, secondly we present the various behaviour they reproduce.
+% In a second place, we proceed to the evaluation of our microbenchmarks: we present our experimental methodology to measure interferences, then we study the relationship between microbenchmark parameters and the sensitivity to interferences.
+
+%%However, using any of these would not affect our workflow.
+
+%\subsection{Memory access model}
+
+
+% \section{Plateforme expérimentale}
+
+% All experiments reported in this paper are conducted on the NXP iMX
+% 6.q Sabre Lite board~\cite{sabrelite,features}.
+%%, whose detailed specification is
+%%available in~\cite{}.  
+% The iMX6 processor targets among
+% others the automotive market.  The
+% iMX6 processor is based on the Cortex A9 MPCore platform comprising
+% four Cortex A9 cores.  The Cortex A9 is a superscalar processor
+% designed to offer good average performance, hence it relies on complex
+% hardware features, notably caches, prefetchers and out-of-order
+% execution.
+
+% \begin{figure}[!ht]
+% \centering
+% \includegraphics[width=0.7\linewidth]{figures/platform.pdf}
+% \caption{\label{fig:platform}iMX6 memory system block diagram}
+% \end{figure}
+
+% A simplified overview of the iMX6 memory system is depicted in Figure~\ref{fig:platform}.
+% A private 64KiB L1 harvard cache is associated to each core.
+% The cores are connected to a \emph{PL310 cache controller} managing 1MiB of unified 16-way level 2 cache.
+% The PL310 controller offers a \emph{lockdown by master}~\cite{lockdown} feature that allows one to set a mask for each core defining which way can be used by the cache eviction policy.
+% We use this feature to split equally the L2 cache by allocating four disjoint ways to each core.
+%% It has nothing to do with the Imx
+%% It is worth noting that an equivalent partitioning can be achieved
+%% using page coloring techniques~\cite{kessler1992page}, although it
+%% requires a compatible page allocator such as
+%% \textsc{PALLOC}~\cite{yun2014palloc}.
+% The last level of the memory hierarchy is the DRAM.
+% In our setup, this level is the only one which is not partitionned.
+% The interface to the DRAM is the \emph{Multi-Mode Memory Controller (MMDC)}, which is also in charge of the optimization of the global DDR bandwidth.
+% To that end, it may perform access reordering and speculative row precharging~\cite{mmdc_dbi}, hence it can be unfair regarding access requests service time.
+% 
+% To comply with the event based model presented in section~\ref{section:microbenchs}, we decompose the memory system of our platform in a \emph{private} and a \emph{shared} part.
+% We choose to include only memories subject to spatial interferences and their interface in the shared part.
+% Consequently, since we partition the L2 cache, the shared part in the decomposition of our platform only consists in the DRAM and the MMDC.
+% Thus, we consider that  shared memory access requests are emitted on L2 cache misses.
+
+% The operating system used in this study is a \textsc{GNU / linux} distribution generated using the pyro release of the \textsc{yocto} project~\cite{yocto}.
+% It uses the 4.1.15 kernel version compiled with GCC 6.4.0.
+% Since our experiments do not involve scheduling and that applications are not preempted, we do not make use of \texttt{PREEMPT\_RT}~\cite{rtpreemt} patches or a platform like \textsc{LITMUS RT}~\cite{calandrino2006litmus}.
+
+
+\section{Mesures d'interférences}
+\label{section:eval-microbenchmarks}
+
+Dans cette section, nous utilisons les microbenchmarks que nous avons définis précédemment pour évaluer l'impact du phénomène d'interférences mémoires sur l'iMX6.
+Nous avons ici deux objectifs : évaluer la plage de comportement que peuvent produire nos microbenchmarks, et étudier le phénomène des interférences sur l'iMX6.
+Nous commencerons par détailler le protocole de mesure mis en place, avant de présenter les résultats obtenus.
+
+\subsection{Protocole de mesure d'interférences}
+\label{section:protocole}
+
+% Une \emph{mesure d'interférence} vise à déterminer le ralentissement subi à cause des interférences \emph{dans le pire cas} par un programme.
+% Nous déterminons ce retard expérimentalement en effectuant des mesures de bout-en-bout, c'est à dire sur l'intégralité d'un chemin d'exécution.
+% Pour cela, nous mesurons deux quantités:
+% \begin{itemize}
+% 	\item \emph{Le pire temps d'exécution en isolation} que nous notons $T_{iso}$.
+% 	Il s'agit du pire temps d'exécution observé de l'application lorsqu'elle est exécutée en parallèle de tâches idle. 
+% 	\item \emph{Le pire temps d'exécution en situation de contention} que nous notons $T_{cont}$.
+% 	Il s'agit du pire temps d'exécution observé de l'application lorsqu'elle est exécutée en parallèle de \emph{charges} destinées à stresser le système mémoire.
+% 	Plusieurs combinaisons de charges différentes évaluées pour déterminer ce temps.
+% \end{itemize}
+
+% Une fois $T_{cont}$ et $T_{iso}$ mesurés, on calcule le pire retard global observé comme suit.
+
+Une mesure d'interférence vise à déterminer le plus grand surcoût temporel observé pour une application.
+Nous exprimerons ce surcoût temporel en pourcentage du temps d'exécution en isolation $T_{iso}$.
+En notant $T_{cont}$ le temps d'exécution en situation de contention, le surcoût temporel est calculé ainsi :
+
+\begin{equation}
+	\label{equation:overhead}
+	Overhead = 100 \cdot \frac{T_{cont} - T_{iso}}{T_{iso}}
+\end{equation}
+
+Les temps $T_{iso}$ et $T_{cont}$ sont obtenus expérimentalement, par des mesures de bout en bout.
+C'est-à-dire que les temps sont déterminés pour l'intégralité d'un chemin d'exécution.
+Le temps d'exécution $T_{iso}$ est le plus grand temps d'exécution de l'application mesuré face à des programmes \emph{idle}.
+Le temps d'exécution en contention est le plus grand temps d'exécution de l'application mesuré face à différentes combinaisons de \emph{charges}, qui sont des programmes conçus pour stresser le système mémoire.
+
+Pour que les mesures soient valides, il est important de s'assurer de l'absence de préemption et de migration pour les applications.
+Afin d'éviter les migrations, les applications sont chacune épinglées à un cœur à l'aide de l'interface POSIX \texttt{sched\_set\_affinity}.
+Afin d'éviter les préemptions, nous ordonnançons les applications et charges en utilisant la politique temps-réel \texttt{SCHED\_FIFO} et la priorité maximale.
+L'utilisation de cette politique avec la priorité maximale est censée garantir l'absence de préemption pour les processus concernés, y compris par des threads noyau.
+Il faut donc être prudent lorsqu'on utilise cette politique.
+En effet, si tous les cœurs utilisent cette politique d'ordonnancement pour exécuter des programmes qui ne terminent pas, il devient impossible de reprendre la main.
+C'est pourquoi, \textsc{Linux} implante un filet de sécurité pour ce cas précis, au moyen d'un mécanisme dit d'\emph{inhibition temps-réel} ou \emph{RT Throttling}.
+Ce mécanisme préempte périodiquement les applications ordonnancées avec des politiques temps-réel afin de permettre au noyau de traiter des interruptions.
+Cette fonctionnalité est activée par défaut, et est une source de perturbations pour nos expériences.
+Nous l'avons désactivé par le biais du \emph{procfs}.
+
+\subsection{\label{section:microbench_dataset}Ensemble des comportements évalués}
+
+À l'aide de nos microbenchmarks, nous constituons un \emph{ensemble de données} pour étudier l'effet des interférences sur notre carte.
+Cet ensemble de données est composé de mesures $(X,y)$, où $X$ désigne un comportement d'accès à la mémoire et $y$ une mesure de retards effectuée selon le protocole décrit en section~\ref{section:protocole}.
+Nous évaluons une multitude de comportements différents en faisant varier les paramètres de nos microbenchmarks.
+Ainsi, le comportement d'un microbenchmark est défini par un quadruplet $(B, R, W, F)$ déterminant les paramètres avec lesquelles il est instancié.
+Le paramètre $B$ désigne un comportement d'accès.
+Nous évaluons tous les comportements présentés dans le tableau~\ref{table:comportement_microbenchmarks}.
+
+Le paramètre $F$, rappelons-le, donne le nombre de tours de calcul par boucle d'accès à la mémoire.
+Nous le faisons varier sur une plage de 0 à 10000 en utilisant une échelle logarithmique, de 0 à 10 $F$ varie avec un pas de 1, de 10 à 100 avec un pas de 10, etc.
+Plus formellement, l'ensemble des valeurs de $F$ est défini ainsi.
+
+\begin{equation}
+	T \in \{0, 10000\} \cup \{n \cdot 10^m\ |\ 0 < n < 10, 0 \le m \le 3\}
+\end{equation}
+
+Les paramètre $R$ et $W$ donnant les nombres respectifs de tours de boucles de lectures et d'écritures sont générés différemment pour les groupes \texttt{Stream} et \texttt{MemBench}.
+En ce qui concerne le groupe $MemBench$, $R$ et $W$ sont définis à partir d'une longueur de rafale $BL$ et d'un ratio de lectures $R$.
+Nous testons des rafales d'accès de longueurs 4 et 50, et les ratios de lectures entre 0 et 1 par pas de 0.25.
+\begin{equation}
+	RW_{MemBench} = \{(R \cdot BL, ((1-R) \cdot BL))\ |\ R \in \{0, \frac{1}{4}, \frac{1}{2}, \frac{3}{4}, 1\}, BL \in \{4, 50\}\}
+\end{equation}
+Pour le groupe \texttt{Stream}, les paramètres $R$ et $W$ sont déterminés à partir d'un paramètre $mlp$, définissant le taux de parallélisme d'accès à la mémoire désirée.
+Pour une valeur de $mlp$, on évalue les paires $(1, mlp)$, $(mlp, 1)$ et $(mlp, mlp)$.
+Nous évaluons les valeurs de $mlp$ 2, 4, 8 et 16.
+\begin{equation}
+	RW_{Stream} = \{(1, mlp),(mlp,1), (mlp, mlp)\ |\ mlp \in \{2, 4, 8, 16\}\}
+\end{equation}
+
+% \begin{table}[h!]
+% 	\renewcommand{\arraystretch}{1.5}  
+% 	\rowcolors{2}{gray!25}{white}
+% 	\begin{tabular}{r c c}
+% 		\toprule
+% 		Groupe & \texttt{MemBench} & \texttt{Stream} \\
+% 		\midrule
+% 		$S$ & $\{8\}$& $\{1, 8\}$ \\
+		
+% 		$RW$ & $\begin{array}{l}
+% 					\{(rL, (1-r)L) | r \in R, l \in L\}\\
+% 					R = \{0,\frac{1}{4}, \frac{1}{2}, \frac{3}{4}, 1\} \\ 
+% 					L = \{4, 100\}
+% 				\end{array}$ 
+% 			 & $\begin{array}{l}
+% 				\{(m, 1), (1, m), (m, m) | m \in M\} \\
+% 				M = \{1, 2, 4, 8, 16\}
+% 			 \end{array}$
+% 			 \\
+
+% 		\#Cpt & 8 & 2 \\
+% 		$WSS$ & \multicolumn{2}{c}{$\{256KiB, 16MiB\}$} \\
+% 		$Template$ & \multicolumn{2}{c}{$\{RCW,RCWC\}$} \\
+% 		$T$ & \multicolumn{2}{c}{$\{n10^m\ |\ 0 \le n \le 10, 0 \le m \le 3\}$}\\
+% 		\midrule
+% 		\#Instances & TODO & TODO \\
+% 		Total & \multicolumn{2}{c}{TODO} \\
+% 		\bottomrule
+% 	\end{tabular}
+% \end{table}
+
+
+
+% By varying the parameters of Algorithm~\ref{alg:microbench}, we
+% obtain 1568 microbenchmark instances with memory behavior of varying
+% nature and intensity.  The data set comprises instances of all the
+% access policy combinations defined in Table~\ref{table:access_policy}.
+% The $R$ and $W$ parameters are determined by multiplying a read over
+% write ratio (0, 0.25, 0.5, 0.75, and 1) with a total number of
+% accesses (20 and 100).  The range of the throttle parameter $T$ varies
+% from 0 to an upper bound that depends on the combination of access
+% policy.  The upper bound is 10,000 for the \textsc{STREAM} extensions, and 2000 for the other combinations.
+%  The reason of this difference is purely
+% practical, as large throttle values results in longer experiments.
+
+% The relationship between the overhead and microbenchmarks' parameters is shown in Figure~\ref{fig:throttle_overhead}.
+% For each nature of traffic observed (characterized by all the benchmark parameters except the throttle rate), we can associate a curve representing the evolution of the overhead in function of the throttle rate.
+% In Figure~\ref{fig:throttle_overhead_all}, we can see that if each curve is decreasing exponentially with the throttle rate (the x scale is logarithmic), the speed of decay of each curve varies greatly.
+% Figure~\ref{fig:throttle_overhead_fill} exhibits important variations observed for the same throttle values.
+% The overhead varies between 109\% and 384\% for a throttle of 0, between 49\% and 262\% for a throttle of 10, and between 7\% and 199\% for a factor of 100.
+% In Figure~\ref{fig:throttle_overhead_hl}, the two highlighted curves illustrate how the rate of decay may vary.
+% There is a 178\% overhead difference in favor of the red curve for a throttle of 0,
+% They suffer roughly the same overhead for a throttle of 8, and for a throttle of 100 the difference is of 115\% in favor of the nature illustrated by the blue curve.
+% This shows a great variety of shapes between the various nature of memory consumption, in spite of the fact they share a fairly similar structure.
+
+\subsubsection{Résultats globaux}
+La figure ~\ref{fig:throttle_overhead} montre la relation entre le nombre de tout de boucle de calcul par tour de boucle d'accès (le paramètre $F$) et le surcoût temporel pour les instances de microbenchmarks constituant le jeu de données défini dans la section~\ref{section:microbench_dataset}.
+Chaque ligne relie les résultats des instances définies par les mêmes paramètres à l'exception du paramètre $F$.
+On dira que ces instances ont une utilisation de la mémoire de \emph{même nature}.
+
+Sur cette figure, on peut tout d'abord observer que le retard global subi décroit exponentiellement avec le paramètre $F$ (figure~\ref{fig:throttle_overhead_all_lin}).
+On peut en effet exprimer la variation du retard $O_N$ subi en fonction de $F$ par l'équation différentielle suivante:
+
+\begin{equation}
+	\frac{dO_N(F)}{dF} = - \lambda O_N(F)
+\end{equation}
+
+Cette équation signifie que lorsque $F$ augmente, le retard subi diminue proportionnellement avec le paramètre $F$.
+La solution de cette équation est
+
+\begin{equation}
+	O_N(F) = O_N(0) \cdot e^{-\lambda F}
+	\label{eq:throttle-exponential-decrease}
+\end{equation}
+
+On peut donc exprimer la sensibilité d'une nature de trafic en fonction du retard subi pour $F=0$ (plus grand retard subi) et de la vitesse de décroissance $\lambda$.
+La figure~\ref{fig:throttle_overhead_all_log} utilise une échelle logarithmique en abscisse afin de voir plus en détail la relation entre le pire surcoût temporel observé et $F$.
+
+Notons d'abord qu'il existe un seuil à partir duquel le surcoût temporel engendré par les interférences est tel qu'il excède le bénéfice que peut apporter le fait d'avoir plusieurs cœurs.
+Ce seuil est atteint pour une application lorsque le facteur d'inflation de son temps d'exécution excède le nombre de cœurs disponibles.
+Dans un système avec quatre cœurs, cela correspond à un surcoût temporel de 300\%.
+Nous pouvons constater qu'en pratique ce seuil est non seulement atteint, mais largement dépassé, avec des surcoûts temporels pouvant dépasser les 500\%.
+Parmi les 3870 instances représentées dans la figure~\ref{fig:throttle_overhead}, 233 dépassent le seuil de 300\% de surcoût temporel.
+Le dépassement a lieu pour des trafics avec des intensités élevées, les valeurs de $P$ concernées étant comprises entre 0 et 20.
+
+Les retards observés peuvent non seulement être très importants, ils peuvent également varier énormément pour des valeurs de $F$ pourtant similaires.
+Ces variations sont mises en évidences sur la figure~\ref{fig:throttle_overhead} par des lignes verticales montrant l'écart de valeurs observées pour certaines valeurs de $F$.
+Les écarts illustrés sont respectivement d'environ 437\%, 397\%, 123\%, 26\% et 3\% lorsque $F$ est égal à 0, 10, 100, 1000 et 1000.
+Outre les ordres de grandeur significatifs auxquels nous avons à faire, nous notons que les écarts observés décroissent à mesure que $F$ augmente.
+Cela indique que la variabilité provient des boucles d'accès à la mémoire. 
+
+\begin{figure}[!h]
+\centering
+\begin{subfigure}[t]{0.49\linewidth}
+	\includegraphics[width=\linewidth]{figures/throttle_overhead_annot.pdf}
+	\caption{\label{fig:throttle_overhead_all_lin}Échelle linéaire}
+\end{subfigure}
+\begin{subfigure}[t]{0.49\linewidth}
+	\includegraphics[width=\linewidth]{figures/throttle_overhead_log_annot.pdf}
+	\caption{\label{fig:throttle_overhead_all_log}Échelle logarithmique}
+\end{subfigure}
+\caption{\label{fig:throttle_overhead}Relation entre le surcoût temporelle et nombre de tours de boucles de calcul par accès à la mémoire}
+\end{figure}
+
+On peut exprimer la sensibilité d'un microbenchmark indépendamment de son paramètre d'intensité au moyen de deux paramètres : le surcoût atteint pour une intensité maximale $O_N(0)$ et le paramètre de décroissance $\lambda$.
+Cela signifie, que l'on ne peut comparer la sensibilité de deux natures de trafic différentes indépendamment du paramètre seulement dans deux cas: celui où elles ont la même intensité maximale et celui où elles décroissent au même rythme.
+Ceci est illustré par les deux courbes mises en évidence dans la figure~\ref{fig:throttle_overhead_all_log}.
+Elles se coupent quand $F = 10$, quand $F < 10$ la courbe orange domine très largement la courbe bleue, puis la situation s'inverse.
+Bien que cela se voit moins quand la courbe bleue domine, les écarts restent significatifs. 
+Par exemple, lorsque $F=20$, le retard pour la courbe bleue est de 248\% et de 131\% pour la courbe orange.
+La distribution des paramètres $\lambda_N$ et $O_N(0)$ observés en moyenne pour une nature de trafic $N$ est illustré figure~\ref{fig:dist-lambda-omax}.
+Elle montre qu'il n'y a a priori pas de lien particulier entre ces deux quantités.
+
+\begin{figure}[!h]
+	\centering
+	\includegraphics[width=0.5\linewidth]{figures/dist_lambda_omax.pdf}
+	\caption{\label{fig:dist-lambda-omax}Distribution de l'intensité maximale par rapport au facteur de décroissance moyen pour différentes natures de trafic}
+\end{figure}
+
+\subsubsection{Résultats par type d'applications}
+
+Les courbes d'évolutions de retard subi pour les microbenchmarks du groupe \texttt{MemBench} sont montrées dans la figure~\ref{fig:throttle_overhead_membench}.
+On peut y constater que le comportement diffère lorsque les accès sont séquentiels ou aléatoires.
+Cela se vérifie particulièrement pour les comportements d'accès utilisant des tableaux de pointeurs ou bien des listes chaînées.
+En effet, ceux-ci permettent de générer des accès aléatoires ou séquentiels sans altérer le comportement du microbenchmark.
+La différence de retards observée est donc directement imputable à la variation du temps d'accès à la mémoire.
+Les retards les plus importants sont observés pour les comportements séquentiels en lecture.
+
+\begin{figure}[!p]
+\includegraphics[width=\linewidth]{figures/throttle_overhead_membench.pdf}
+\caption{\label{fig:throttle_overhead_membench}Évolution du surcoût temporel avec le nombre de tours de boucle de calcul des microbenchmarks du groupe \texttt{MemBench}}
+\end{figure}
+
+\begin{figure}[!p]
+\includegraphics[width=\linewidth]{figures/throttle_overhead_stream.pdf}
+\caption{\label{fig:throttle_overhead_stream}Évolution du surcoût temporel avec le nombre de tours de boucle de calcul des microbenchmarks du groupe \texttt{MemBench}}
+\end{figure}
+
+Le comportement des microbenchmarks du groupe \texttt{Stream} est montré dans la figure~\ref{fig:throttle_overhead_stream}.
+Les paramètres importants pour ce groupe sont le stride et le taux de parallélisme des accès à la mémoire $mlp$.
+Lorsque $mlp=2$, le comportement pour un stride donné varie peu.
+Néanmoins, les retards sont moins importants lorsque le stride vaut 1.
+En effet, un stride plus faible implique une localité plus élevée et donc moins d'accès vers la mémoire principale.
+Lorsque le paramètre $mlp$ dépasse 4, on atteint le seuil identifié par Valsan et al.~\cite{valsan2016taming} à partir duquel le contrôleur de cache L2 de notre matériel de référence est saturé.
+Lorsque le stride vaut 8 cela se traduit par une baisse de sensibilité, sauf pour le cas où les lectures sont majoritaires.
+Ce comportement est en accord avec ce que l'on a pu observer dans le groupe \texttt{stream}.
+Lorsque le stride vaut 1, on observe à la fois une hausse de sensibilité et de la variance.
+Cela suggère l'importance du rôle du contrôleur de cache L2 dans la sensibilité aux interférences, mais aussi que les cas pathologiques apparaissent plus rarement qu'au niveau de la mémoire principale.
+
+Ces premiers résultats montrent que les interférences peuvent engendrer des retards considérables, représentant souvent plusieurs fois le temps d'exécution 
+des programmes.
+
+\section{Conclusions}
+
+%Dans ce chapitre nous avons évalué l'impact des interférences sur une plateforme matérielle couramment utilisée dans l'industrie.
+%À cet effet, nous avons introduit deux outils: un modèle événementiel pour exprimer le trafic mémoire et des microbenchmarks permettant d'étudier l'impact des interférences sur différents types de trafic.
+
+
+
+%Dans notre approche d'apprentissage, nous utilisons les outils présentés dans ce chapitre afin de constituer un jeu des données d'apprentissage.
+%Les microbenchmarks en particulier permettent de pallier au manque d'application disponible pour constituer un tel jeu de données.
+%L'étape suivante est de caractériser ces comportements afin de compléter cet ensemble d'apprentissages.
+%Ce que nous allons aborder dans le chapitre suivant.
+
+% Dans ce chapitre, nous avons évalué l'impact des interférences sur une carte multi-coeur COTS.
+% À cette fin, nous avons commencé par introduire une représentation évenementielle du trafic mémoire afin d'indentifier différents aspects du comportement d'accès à la mémoire d'un programme.
+% Ces aspects sont relatifs à la fois à l'intensité et à la nature de ce comportement.
+% Nous avons ensuite conçu un ensemble de microbenchmarks paramètrable permettant de générer différents types de comportement d'accès à la mémoire, variant selon ces différents aspects.
+% Enfin, nous avons montré que les paramètres de nos microbenchmarks permettent de couvrir une grande variété de cas de sensibilité aux interférences.
+
+% Dans ce chapitre, nous nous penchons sur l'évaluation empirique de l'impact des interférences sur une carte multi-coeur COTS.
+% Le but de cet étude est de déterminer non seulement l'ampleur des ralentissements induits par les interférences, mais aussi de savoir à quel point ces ralentissements peuvent varier.
+% En pratique, ce type d'étude se heurte à deux difficultés.
+% La première est d'indentifier les aspects importants pour la sensibilité aux interférences.
+% La seconde est de réunir suffisamment d'applications représentatives de ces aspects.
+% Notre approches pour surmonter le premier obstacle consiste à introduire une représentation évenementielle du comportemetn d'accès à la mémoire.
+% Pour répondre aux deuxième problème, nous introduisons un ensemble de microbenchmarks paramétrable 
+
+
+
+
+% Objectifs de chapitre => évaluer l'ampleur du problème des interférences sur une carte COTS en fonction du comportement des applications.
+% qestions : est ce que c'est significatifs ? est ce que cela varie beaucoup ?
+
+% Méthodes dynamiques.
+% Pb : applications représentatives ? 
+% Quantité d'applications.
+% Quels aspects ?
+
+% Plan présentation du matériel de référence. Présentation du modèle évenementiel. Présentation microbenchmarks.
+% Évaluation.
+
+% Dans ce chapitre, nous présentons des outils et méthodologies pour évaluer l'ampleur du problème des interférences du système mémoire sur une cible multi-coeur.
+% Nous y avons présenté trois contributions:
+
+Nous avons, dans ce chapitre, introduit des outils et des méthodes pour l'étude empirique de l'impact des interférences sur une cible multi-cœur COTS.
+Nous y exposons trois contributions.
+
+Tout d'abord, nous avons introduit une représentation événementielle du comportement d'accès à la mémoire d'un programme. 
+À l'aide de cette représentation, nous avons pu identifier différents aspects caractérisant la nature et l'intensité de l'utilisation de la mémoire que fait un programme.
+Nous avons, ensuite, développé un ensemble de microbenchmarks permettant de générer une multitude de comportements d'accès à la mémoire, variant selon les aspects que nous avons identifiés précédemment.
+Enfin, nous avons conduit une étude expérimentale dans le but d'évaluer, d'une part l'ampleur du problème des interférences sur une cible multi-cœur COTS représentative de celle utilisée dans l'industrie, d'autre part le spectre de sensibilités aux interférences offertes par nos microbenchmarks.
+Cette étude montre que le surcoût induit par les interférences peut être conséquent, avec des facteurs de ralentissements pouvant excéder le nombre de cœurs disponibles.
+Elle montre également que nos microbenchmarks couvrent un large spectre de sensibilités différentes.
+Nous notons, plus particulièrement, d'importantes variations causées par des aspects indépendants de l'intensité de l'utilisation de la mémoire.
+
+% \begin{itemize}
+% 	\item Nous avons introduit une représentation évenementielle du comportement d'accès à la mémoire d'un programme. 
+% 	À l'aide de cette représentation, nous avons pu identifier différents aspects caractérisant la nature et l'intensité de l'utilisation de la mémoire que fait un programme.
+% 	\item Nous avons développé un ensemble de microbenchmarks paramétrables, permettant de générer une grande variété de comportement d'accès à la mémoire.
+% 	Les paramètres de ces microbenchmarks influent directement sur les aspects identifiés à l'aide de la représentation évenementielle.
+% 	\item Nous avons conduit une étude expérimentale pour évaluer l'ampleur du problème des interférences sur une carte multi-coeur COTS représentative de celles utilisées dans l'industrie.
+% 	Á cette fin, nous avons utilisé nos microbenchmarks pour constituer un jeu de données synthétique associant un pire surcoût temporel à un comportement donné.
+% 	Cette étude montre que les ralentissements causés par les interférences sont significatifs et que nos microbenchmarks permettent de couvrir un large specre de cas de sensibilité différentes.
+% 	Cela se traduit notamment par une importante variation de la sensibilité causée par des aspects indépendants de l'intensité de l'utilisation de la mémoire.
+% \end{itemize}
+
+L'étude expérimentale que nous avons conduite nous a permis de réunir un important ensemble de données sur la sensibilité des applications au phénomène d'interférences.
+Néanmoins, le comportement des applications dans cet ensemble étant caractérise en fonction des paramètres des microbenchmarks, ces données ne nous donnent pas d'information sur la sensibilité d'applications quelconques.
+Pour lever cette limitation, nous allons, dans le prochain chapitre, nous intéresser à la mesure de différents du comportement d'accès à la mémoire de manière à pouvoir caractériser le comportement de n’importe quel programme.  
