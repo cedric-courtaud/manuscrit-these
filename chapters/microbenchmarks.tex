@@ -359,7 +359,7 @@ Ce tableau est trié, un nœud pointe vers le nœud stocké dans la case de tabl
 Ainsi le parcours de la liste engendre une suite d'accès linéaire.
 La politique \texttt{shuffled-list} est également similaire, à l'exception que le tableau de nœuds est mélangé à l'initialisation.
 
-La politique \texttt{stream} est une généralisation de la partie parallèle de la politique d'accès utilisé par le microbenchmark \textsc{STREAM}~\cite{STREAM}.
+La politique \texttt{stream} est une généralisation de la partie parallèle de la politique d'accès utilisé par le microbenchmark \textsc{STREAM}~\cite{McCalpin1995}.
 Son usage est préconisé pour évaluer la capacité du matériel à traiter des accès en parallèle~\cite{black2013bandwidth}~\cite{valsan2016taming}.
 Cette politique correspond au parcours séquentiel de plusieurs tableaux en parallèle.
 Il s'agit d'un type d'accès rencontré fréquemment.
